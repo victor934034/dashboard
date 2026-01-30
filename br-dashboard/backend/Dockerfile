@@ -1,5 +1,5 @@
 FROM public.ecr.aws/docker/library/node:20-alpine
-# Forçando limpeza de cache do backend - 30/01/2026 15:25 - RESILIENT V1.1.2
+# Forçando limpeza de cache do backend - 30/01/2026 15:30 - SCANNER V1.1.3
 
 # Instalar dependências do sistema para Puppeteer (WhatsApp) e Git para dependências do GitHub
 RUN apk add --no-cache \
