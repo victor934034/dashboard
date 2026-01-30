@@ -1,5 +1,5 @@
 FROM node:22-slim AS builder
-# Forçando limpeza completa de cache - 30/01/2026 13:45 - All Services on Port 3000
+# Forçando limpeza completa de cache - 30/01/2026 13:50 - Path Verification
 
 WORKDIR /app
 
