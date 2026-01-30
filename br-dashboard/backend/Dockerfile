@@ -1,5 +1,5 @@
 FROM node:18-alpine
-# Forçando limpeza de cache do backend - 30/01/2026 14:05 - WhatsApp Patch
+# Forçando limpeza de cache do backend - 30/01/2026 14:10 - HARD RESET
 
 # Instalar dependências do sistema para Puppeteer (WhatsApp)
 RUN apk add --no-cache \
