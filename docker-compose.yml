@@ -4,10 +4,10 @@ services:
       context: ./app
       dockerfile: Dockerfile
     depends_on:
-      - dashboard-dashboard1
+      - dashboard_dashboard1
     restart: always
 
-  dashboard-dashboard1:
+  dashboard_dashboard1:
     build:
       context: ./br-dashboard/backend
       dockerfile: Dockerfile
