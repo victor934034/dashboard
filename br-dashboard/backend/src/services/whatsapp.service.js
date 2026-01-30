@@ -12,7 +12,7 @@ class WhatsAppService {
     this.contactsCache = new Map();
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 5;
-    console.log('🚀 WhatsApp Service Patched Version 1.0.9 - STABILITY FINAL');
+    console.log('🚀 WhatsApp Service Patched Version 1.1.0 - TOTAL FIX');
   }
 
   async initialize() {
@@ -448,6 +448,10 @@ class WhatsAppService {
       this.chatsCache = formattedChats
         .filter(c => c !== null)
         .sort((a, b) => (b.lastMessage?.timestamp || 0) - (a.lastMessage?.timestamp || 0));
+
+      const groupsCount = this.chatsCache.filter(c => c.isGroup).length;
+      const privateCount = this.chatsCache.length - groupsCount;
+      console.log(`✅ Cache atualizado: ${groupsCount} grupos e ${privateCount} chats privados`);
 
       return this.chatsCache;
     } catch (err) {
