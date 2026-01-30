@@ -25,54 +25,63 @@ class GoogleSheetsService {
 
   async initialize() {
     try {
-      console.log('🔍 [V1.1.3] Iniciando Scanner de Ambiente...');
+      console.log('🔍 [V1.1.4] Iniciando Scanner Universal de Credenciais...');
 
-      // 1. Scanner de Nomes de Variáveis (Ajudar o usuário a ver typos)
-      const allVars = Object.keys(process.env).sort();
-      console.log('📋 LISTA DE VARIÁVEIS DETECTADAS NO CONTAINER:');
-      console.log(allVars.join(', '));
+      let email = '';
+      let key = '';
 
-      let email = (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || '').trim();
-      let key = (process.env.GOOGLE_PRIVATE_KEY || '').trim();
-
-      // 2. Lógica de Fallback (Busca inteligente por conteúdo)
-      if (!email || email.length < 5) {
-        console.log('🕵️‍♂️ Procurando email em outras variáveis...');
-        const candidate = allVars.find(v => {
-          const val = (process.env[v] || '');
-          return val.includes('@') && val.includes('gserviceaccount.com');
-        });
-        if (candidate) {
-          console.log(`💡 Encontrei um email provável na variável: ${candidate}`);
-          email = process.env[candidate].trim();
+      // 1. Scanner Universal: Busca JSON completo em qualquer variável de ambiente
+      const allVars = Object.keys(process.env);
+      for (const varName of allVars) {
+        const value = (process.env[varName] || '').trim();
+        if (value.startsWith('{') && value.endsWith('}')) {
+          try {
+            const json = JSON.parse(value);
+            if (json.client_email && json.private_key) {
+              console.log(`💡 JSON de credenciais detectado na variável: ${varName}`);
+              email = json.client_email;
+              key = json.private_key;
+              break;
+            }
+          } catch (e) {
+            // Não é um JSON válido ou não tem os campos, continua procurando
+          }
         }
       }
 
-      if (!key || key.length < 20) {
-        console.log('🕵️‍♂️ Procurando chave privada em outras variáveis...');
-        const candidate = allVars.find(v => (process.env[v] || '').includes('PRIVATE KEY'));
-        if (candidate) {
-          console.log(`💡 Encontrei uma chave provável na variável: ${candidate}`);
-          key = process.env[candidate].trim();
-        }
-      }
-
-      // Limpeza de aspas
-      email = email.replace(/^['"]|['"]$/g, '');
-      key = key.replace(/^['"]|['"]$/g, '');
-
+      // 2. Fallback: Se não achou JSON, usa as variáveis específicas ou busca por conteúdo
       if (!email || !key) {
-        console.warn('❌ [V1.1.3] CRITICAL: Email ou Chave NÃO encontrados após scanner e fallback.');
+        email = email || (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || '').trim();
+        key = key || (process.env.GOOGLE_PRIVATE_KEY || '').trim();
+
+        if (!email) {
+          const candidate = allVars.find(v => {
+            const val = (process.env[v] || '');
+            return val.includes('@') && val.includes('gserviceaccount.com');
+          });
+          if (candidate) email = process.env[candidate].trim();
+        }
+
+        if (!key) {
+          const candidate = allVars.find(v => (process.env[v] || '').includes('PRIVATE KEY'));
+          if (candidate) key = process.env[candidate].trim();
+        }
       }
 
-      // Tratamento intensivo da chave privada
-      key = key.replace(/\\n/g, '\n');
+      // Limpeza final (aspas e escapes)
+      email = email.replace(/^['"]|['"]$/g, '');
+      key = key.replace(/^['"]|['"]$/g, '').replace(/\\n/g, '\n');
+
       if (key && !key.includes('-----BEGIN PRIVATE KEY-----')) {
         const cleanKey = key.replace(/-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----|\s/g, '');
         key = `-----BEGIN PRIVATE KEY-----\n${cleanKey}\n-----END PRIVATE KEY-----`;
       }
 
-      console.log(`📧 Configurando JWT (V1.1.3) para: ${email || 'Vazio'} (Key Length: ${key.length})`);
+      if (!email || !key) {
+        console.warn('❌ [V1.1.4] CRITICAL: Nenhuma credencial Google válida encontrada.');
+      } else {
+        console.log(`📧 Configurando JWT (V1.1.4) para: ${email.substring(0, 10)}... (Key: ${key.length} bytes)`);
+      }
 
       this.auth = new google.auth.JWT(
         email,
@@ -85,9 +94,9 @@ class GoogleSheetsService {
       );
 
       this.sheets = google.sheets({ version: 'v4', auth: this.auth });
-      console.log('✅ Google Sheets Service configurado (V1.1.3)');
+      console.log('✅ Google Sheets Service configurado (V1.1.4)');
     } catch (error) {
-      console.error('❌ Erro fatal ao configurar Google Sheets V1.1.3:', error);
+      console.error('❌ Erro fatal ao configurar Google Sheets V1.1.4:', error);
       throw error;
     }
   }
