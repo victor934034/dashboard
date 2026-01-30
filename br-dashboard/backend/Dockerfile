@@ -1,5 +1,5 @@
 FROM node:20-alpine
-# Forçando limpeza de cache do backend - 30/01/2026 14:35 - MAIN BRANCH PATCH
+# Forçando limpeza de cache do backend - 30/01/2026 14:38 - LOCKFILE SYNC PATCH
 
 # Instalar dependências do sistema para Puppeteer (WhatsApp) e Git para dependências do GitHub
 RUN apk add --no-cache \
