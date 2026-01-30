@@ -4,11 +4,15 @@ WORKDIR /app
 
 # Copiar package.json e instalar dependências
 COPY package*.json ./
-RUN npm ci
+RUN npm install
 
-# Copiar código fonte e fazer build - Cache Bust para forçar atualização de permissões
+# COPIE O RESTO DOS ARQUIVOS
 COPY . .
-RUN chmod -R +x node_modules/.bin
+
+# ADICIONE ESTA LINHA: Ela força o Linux a permitir a execução do TSC
+RUN chmod +x ./node_modules/.bin/tsc
+
+# AGORA O COMANDO DE BUILD VAI FUNCIONAR
 RUN npm run build
 
 # Imagem de produção com Nginx
