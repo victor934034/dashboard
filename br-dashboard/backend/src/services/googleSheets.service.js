@@ -97,9 +97,9 @@ class GoogleSheetsService {
       );
 
       this.sheets = google.sheets({ version: 'v4', auth: this.auth });
-      console.log('✅ Google Sheets Service pronto (V1.1.5)');
+      console.log('✅ Google Sheets Service pronto (V1.1.6)');
     } catch (error) {
-      console.error('❌ Erro fatal no Sniper Scanner V1.1.5:', error);
+      console.error('❌ Erro fatal no Sniper Scanner V1.1.6:', error);
       throw error;
     }
   }
