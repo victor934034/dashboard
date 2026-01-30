@@ -25,20 +25,24 @@ class GoogleSheetsService {
 
   async initialize() {
     try {
+      const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || '';
       const privateKey = process.env.GOOGLE_PRIVATE_KEY
         ? process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n')
         : '';
 
-      this.auth = new google.auth.GoogleAuth({
-        credentials: {
-          client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-          private_key: privateKey
-        },
-        scopes: [
+      if (!email || !privateKey) {
+        console.warn('⚠️ Google Sheets Service: Credenciais incompletas (GOOGLE_SERVICE_ACCOUNT_EMAIL ou GOOGLE_PRIVATE_KEY faltando).');
+      }
+
+      this.auth = new google.auth.JWT(
+        email,
+        null,
+        privateKey,
+        [
           'https://www.googleapis.com/auth/spreadsheets',
           'https://www.googleapis.com/auth/drive.file'
         ]
-      });
+      );
 
       this.sheets = google.sheets({ version: 'v4', auth: this.auth });
       console.log('✅ Google Sheets Service inicializado');
