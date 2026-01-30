@@ -1,9 +1,10 @@
 FROM node:18-alpine
 # Forçando limpeza de cache do backend - 30/01/2026 14:10 - HARD RESET
 
-# Instalar dependências do sistema para Puppeteer (WhatsApp)
+# Instalar dependências do sistema para Puppeteer (WhatsApp) e Git para dependências do GitHub
 RUN apk add --no-cache \
     chromium \
+    git \
     nss \
     freetype \
     harfbuzz \
