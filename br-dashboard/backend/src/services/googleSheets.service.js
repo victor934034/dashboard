@@ -45,7 +45,13 @@ class GoogleSheetsService {
       // Se não era JSON, ou faltam campos, usa os campos individuais
       if (!credentials.client_email || !credentials.private_key) {
         credentials.client_email = envEmail;
-        credentials.private_key = envKey.replace(/\\n/g, '\n');
+        let formattedKey = envKey.replace(/\\n/g, '\n');
+
+        // Garante que a chave comece e termine com os marcadores corretos se não for um JSON completo
+        if (formattedKey && !formattedKey.includes('-----BEGIN PRIVATE KEY-----')) {
+          formattedKey = `-----BEGIN PRIVATE KEY-----\n${formattedKey}\n-----END PRIVATE KEY-----`;
+        }
+        credentials.private_key = formattedKey;
       }
 
       if (!credentials.client_email || !credentials.private_key) {

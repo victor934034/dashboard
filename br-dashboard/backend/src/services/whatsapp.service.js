@@ -12,7 +12,7 @@ class WhatsAppService {
     this.contactsCache = new Map();
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 5;
-    console.log('🚀 WhatsApp Service Patched Version 1.0.8 - EXTREME TIMEOUT');
+    console.log('🚀 WhatsApp Service Patched Version 1.0.9 - STABILITY FINAL');
   }
 
   async initialize() {
@@ -372,9 +372,9 @@ class WhatsAppService {
       }
 
       // Primeira vez após boot: tenta carregar rápido (max 2.5s)
-      // Primeira vez após boot: espera um pouco para o WWebJS inicializar o store interno
-      console.log('🔄 Aguardando 3 segundos para estabilização do store...');
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      // Primeira vez após boot: espera 10 segundos para o WWebJS inicializar o store interno (essencial para muitos chats)
+      console.log('🔄 Aguardando 10 segundos para estabilização do store...');
+      await new Promise(resolve => setTimeout(resolve, 10000));
 
       console.log('🔄 Sincronizando chats pela primeira vez...');
       return await this.refreshChatsCache();
