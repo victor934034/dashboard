@@ -13,6 +13,7 @@ services:
       dockerfile: Dockerfile
     environment:
       - PORT=80
+      - NODE_ENV=production
       - DATABASE_URL=postgresql://postgres:senha_segura@postgres:5432/brdashboard
       - REDIS_URL=redis://redis:6379
     depends_on:

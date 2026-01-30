@@ -128,7 +128,7 @@ server.listen(PORT, () => {
 ║                                                      ║
 ║           🚀 BR DASHBOARD BACKEND                   ║
 ║                                                      ║
-║  Servidor rodando em: http://localhost:${PORT}     ║
+║  Status: Servidor Ativo na porta ${PORT}             ║
 ║  Ambiente: ${process.env.NODE_ENV || 'development'}                     ║
 ║                                                      ║
 ╚══════════════════════════════════════════════════════╝
