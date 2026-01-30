@@ -1,5 +1,5 @@
 FROM node:22-slim AS builder
-# Forçando limpeza completa de cache - 30/01/2026 13:00 - Node 22 & Browser Fix
+# Forçando limpeza completa de cache - 30/01/2026 13:10 - Nginx & WhatsApp Fix
 
 WORKDIR /app
 

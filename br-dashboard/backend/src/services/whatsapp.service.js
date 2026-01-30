@@ -20,10 +20,6 @@ class WhatsAppService {
         authStrategy: new LocalAuth({
           dataPath: process.env.WHATSAPP_SESSION_PATH || './whatsapp-session'
         }),
-        webVersionCache: {
-          type: 'remote',
-          remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.3000.1018913253-alpha.html',
-        },
         authTimeoutMs: 60000,
         puppeteer: {
           executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
