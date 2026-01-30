@@ -25,33 +25,55 @@ class GoogleSheetsService {
 
   async initialize() {
     try {
+      console.log('🔍 [V1.1.1] Diagnóstico Google Sheets...');
+
       const email = (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || '').trim();
       let key = (process.env.GOOGLE_PRIVATE_KEY || '').trim();
 
-      if (!email || !key) {
-        console.warn('⚠️ Google Sheets Service: Credenciais incompletas no ambiente.');
+      // Log de variáveis disponíveis (seguro)
+      const googleVars = Object.keys(process.env).filter(k => k.startsWith('GOOGLE_'));
+      console.log('📦 Variáveis Google detectadas:', googleVars.join(', '));
+
+      if (email) {
+        console.log(`📧 Email detectado: ${email.substring(0, 5)}...${email.substring(email.length - 5)} (Length: ${email.length})`);
+      } else {
+        console.warn('❌ GOOGLE_SERVICE_ACCOUNT_EMAIL NÃO ENCONTRADO');
       }
 
-      // Limpeza da chave: trata \n e garante os marcadores BEGIN/END
-      key = key.replace(/\\n/g, '\n');
-      if (key && !key.includes('-----BEGIN PRIVATE KEY-----')) {
-        key = `-----BEGIN PRIVATE KEY-----\n${key}\n-----END PRIVATE KEY-----`;
+      if (key) {
+        console.log(`🔑 Key detectada (Length: ${key.length})`);
+
+        // Limpeza profunda da chave
+        key = key.replace(/\\n/g, '\n');
+
+        // Se a chave veio como um bloco base64 sem os marcadores, tenta reconstruir
+        if (!key.includes('-----BEGIN PRIVATE KEY-----')) {
+          console.log('🛠️ Reconstruindo cabeçalhos da chave...');
+          // Remove espaços e quebras de linha existentes para garantir limpeza
+          const cleanKey = key.replace(/\s/g, '');
+          key = `-----BEGIN PRIVATE KEY-----\n${cleanKey}\n-----END PRIVATE KEY-----`;
+        }
+      } else {
+        console.warn('❌ GOOGLE_PRIVATE_KEY NÃO ENCONTRADA');
       }
 
-      this.auth = new google.auth.JWT(
-        email,
-        null,
-        key,
-        [
+      const authOptions = {
+        credentials: {
+          client_email: email,
+          private_key: key
+        },
+        scopes: [
           'https://www.googleapis.com/auth/spreadsheets',
           'https://www.googleapis.com/auth/drive.file'
         ]
-      );
+      };
 
+      this.auth = new google.auth.GoogleAuth(authOptions);
       this.sheets = google.sheets({ version: 'v4', auth: this.auth });
-      console.log(`✅ Google Sheets Service inicializado para: ${email}`);
+
+      console.log('✅ Google Sheets Service configurado (V1.1.1)');
     } catch (error) {
-      console.error('❌ Erro ao inicializar Google Sheets:', error);
+      console.error('❌ Erro fatal ao configurar Google Sheets:', error);
       throw error;
     }
   }
