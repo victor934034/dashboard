@@ -25,49 +25,31 @@ class GoogleSheetsService {
 
   async initialize() {
     try {
-      let credentials = {};
-      const envEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || '';
-      const envKey = process.env.GOOGLE_PRIVATE_KEY || '';
+      const email = (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || '').trim();
+      let key = (process.env.GOOGLE_PRIVATE_KEY || '').trim();
 
-      // Tenta detectar se o email é na verdade um JSON completo
-      if (envEmail.trim().startsWith('{')) {
-        try {
-          const json = JSON.parse(envEmail);
-          credentials = {
-            client_email: json.client_email,
-            private_key: json.private_key
-          };
-        } catch (e) {
-          console.warn('⚠️ Falha ao fazer parse de GOOGLE_SERVICE_ACCOUNT_EMAIL como JSON');
-        }
+      if (!email || !key) {
+        console.warn('⚠️ Google Sheets Service: Credenciais incompletas no ambiente.');
       }
 
-      // Se não era JSON, ou faltam campos, usa os campos individuais
-      if (!credentials.client_email || !credentials.private_key) {
-        credentials.client_email = envEmail;
-        let formattedKey = envKey.replace(/\\n/g, '\n');
-
-        // Garante que a chave comece e termine com os marcadores corretos se não for um JSON completo
-        if (formattedKey && !formattedKey.includes('-----BEGIN PRIVATE KEY-----')) {
-          formattedKey = `-----BEGIN PRIVATE KEY-----\n${formattedKey}\n-----END PRIVATE KEY-----`;
-        }
-        credentials.private_key = formattedKey;
+      // Limpeza da chave: trata \n e garante os marcadores BEGIN/END
+      key = key.replace(/\\n/g, '\n');
+      if (key && !key.includes('-----BEGIN PRIVATE KEY-----')) {
+        key = `-----BEGIN PRIVATE KEY-----\n${key}\n-----END PRIVATE KEY-----`;
       }
 
-      if (!credentials.client_email || !credentials.private_key) {
-        console.warn('⚠️ Google Sheets Service: Credenciais incompletas (Email ou Chave faltando).');
-      }
-
-      this.auth = new google.auth.GoogleAuth({
-        credentials,
-        scopes: [
+      this.auth = new google.auth.JWT(
+        email,
+        null,
+        key,
+        [
           'https://www.googleapis.com/auth/spreadsheets',
           'https://www.googleapis.com/auth/drive.file'
         ]
-      });
+      );
 
       this.sheets = google.sheets({ version: 'v4', auth: this.auth });
-      console.log('✅ Google Sheets Service inicializado (Smart Loader)');
+      console.log(`✅ Google Sheets Service inicializado para: ${email}`);
     } catch (error) {
       console.error('❌ Erro ao inicializar Google Sheets:', error);
       throw error;
@@ -75,7 +57,10 @@ class GoogleSheetsService {
   }
 
   extractSpreadsheetId(url) {
-    const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
+    if (!url) return null;
+    // Limpa espaços e aspas acidentais no início ou fim (ex: 'url')
+    const cleanUrl = url.trim().replace(/^['"]|['"]$/g, '');
+    const match = cleanUrl.match(/\/d\/([a-zA-Z0-9-_]+)/);
     if (!match) throw new Error('URL inválida do Google Sheets');
     return match[1];
   }
@@ -83,6 +68,7 @@ class GoogleSheetsService {
   async connectSpreadsheet(userId, spreadsheetUrl) {
     try {
       const spreadsheetId = this.extractSpreadsheetId(spreadsheetUrl);
+      console.log(`📡 Conectando à planilha: ${spreadsheetId}`);
 
       const response = await this.sheets.spreadsheets.get({
         spreadsheetId
