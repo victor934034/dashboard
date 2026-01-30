@@ -27,7 +27,7 @@ COPY . .
 RUN mkdir -p /app/whatsapp-session
 
 # Porta do backend
-EXPOSE 80
+EXPOSE 3000
 
 # Comando de inicialização
 CMD ["node", "src/server.js"]
