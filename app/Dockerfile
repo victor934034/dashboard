@@ -1,4 +1,4 @@
-FROM node:18-alpine AS builder
+FROM node:20.11-slim AS builder
 
 WORKDIR /app
 
@@ -6,15 +6,14 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 
-# Garante que não estamos usando nada do host que possa ter vindo sem querer
-# O .dockerignore deveria cuidar disso, mas vamos garantir
+# COPIE O RESTO DOS ARQUIVOS
 COPY . .
 
-# Forçar permissões em toda a pasta de binários
-RUN chmod -R +x node_modules/.bin
+# ADICIONE ESTA LINHA: Ela força o Linux a permitir a execução do TSC
+RUN chmod +x ./node_modules/.bin/tsc
 
-# AGORA O COMANDO DE BUILD USANDO NODE DIRETAMENTE (Ignora erro de permissão do arquivo)
-RUN node node_modules/typescript/bin/tsc -b && node node_modules/vite/bin/vite.js build
+# AGORA O COMANDO DE BUILD VAI FUNCIONAR
+RUN npm run build
 
 # Imagem de produção com Nginx
 FROM nginx:alpine
