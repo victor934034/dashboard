@@ -54,6 +54,11 @@ app.use('/api/pedidos', pedidosRoutes);
 app.use('/api/campanhas', campanhasRoutes);
 app.use('/webhook', webhooksRoutes);
 
+// Redirecionar raiz para o frontend
+app.get('/', (req, res) => {
+  res.redirect(process.env.FRONTEND_URL || 'https://dashboard-dashboard1.zdc13k.easypanel.host/');
+});
+
 // Rota de health check
 app.get('/health', (req, res) => {
   const memory = process.memoryUsage();
