@@ -1,0 +1,30 @@
+services:
+  dashboard-frontend:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    depends_on:
+      - dashboard_dashboard
+    restart: always
+
+  dashboard_dashboard:
+    build:
+      context: ./br-dashboard/backend
+      dockerfile: Dockerfile
+    environment:
+      - PORT=80
+      - DATABASE_URL=postgresql://postgres:senha_segura@postgres:5432/brdashboard
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+    restart: always
+
+  postgres:
+    image: postgres:15
+    environment:
+      - POSTGRES_PASSWORD=senha_segura
+      - POSTGRES_DB=brdashboard
+
+  redis:
+    image: redis:alpine
