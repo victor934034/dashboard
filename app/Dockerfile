@@ -1,5 +1,5 @@
 FROM node:22-slim AS builder
-# Forçando limpeza completa de cache - 30/01/2026 13:40 - Logs Activated
+# Forçando limpeza completa de cache - 30/01/2026 13:45 - All Services on Port 3000
 
 WORKDIR /app
 
@@ -26,7 +26,7 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Expor porta
-EXPOSE 80
+EXPOSE 3000
 
 # Iniciar Nginx
 CMD ["nginx", "-g", "daemon off;"]
