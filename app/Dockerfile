@@ -6,7 +6,7 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 
-# Copiar código fonte e fazer build
+# Copiar código fonte e fazer build - Cache Bust para forçar atualização de permissões
 COPY . .
 RUN chmod -R +x node_modules/.bin
 RUN npm run build
