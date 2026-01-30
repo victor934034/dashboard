@@ -383,7 +383,11 @@ class WhatsAppService {
 
   async refreshChatsCache() {
     try {
-      if (!this.client || !this.client.pupPage) return this.chatsCache;
+      if (!this.client || !this.isReady) return this.chatsCache;
+
+      // Garantir que a página do Puppeteer ainda está viva
+      const page = this.client.pupPage;
+      if (!page || page.isClosed()) return this.chatsCache;
 
       const rawChats = await this.client.getChats();
       const formattedChats = await Promise.all(
@@ -394,7 +398,6 @@ class WhatsAppService {
             // Use contact cache for performance
             let contact = this.contactsCache.get(chat.id._serialized);
             if (!contact) {
-              // Entrada instantânea (detalhes em background)
               contact = {
                 number: chat.id.user,
                 pushname: chat.name || "",
@@ -403,20 +406,17 @@ class WhatsAppService {
               };
               this.contactsCache.set(chat.id._serialized, contact);
 
-              // Enriquecimento em background
+              // Enriquecimento em background sem travar o loop
               chat.getContact()
                 .then(rawContact => {
-                  contact.pushname = rawContact.pushname || contact.pushname;
-                  contact.isMyContact = rawContact.isMyContact || false;
-                  contact.number = rawContact.number || contact.number;
+                  if (rawContact) {
+                    contact.pushname = rawContact.pushname || contact.pushname;
+                    contact.isMyContact = rawContact.isMyContact || false;
+                    contact.number = rawContact.number || contact.number;
+                  }
                 })
                 .catch(() => { });
 
-              this.client.getProfilePicUrl(chat.id._serialized)
-                .then(url => { if (url) contact.profilePicUrl = url; })
-                .catch(() => { });
-            } else if (!contact.profilePicUrl) {
-              // Background update if picture is missing
               this.client.getProfilePicUrl(chat.id._serialized)
                 .then(url => { if (url) contact.profilePicUrl = url; })
                 .catch(() => { });
@@ -435,6 +435,7 @@ class WhatsAppService {
               contact
             };
           } catch (err) {
+            console.error(`⚠️ Erro ao formatar chat ${chat?.id?._serialized}:`, err.message);
             return null;
           }
         })
@@ -446,7 +447,7 @@ class WhatsAppService {
 
       return this.chatsCache;
     } catch (err) {
-      console.error('❌ Erve ao atualizar cache de chats:', err.message);
+      console.error('❌ Erro ao atualizar cache de chats:', err.message);
       return this.chatsCache;
     }
   }
