@@ -25,31 +25,54 @@ class GoogleSheetsService {
 
   async initialize() {
     try {
-      console.log('🔍 [V1.1.2] Diagnóstico de Credenciais Google...');
+      console.log('🔍 [V1.1.3] Iniciando Scanner de Ambiente...');
+
+      // 1. Scanner de Nomes de Variáveis (Ajudar o usuário a ver typos)
+      const allVars = Object.keys(process.env).sort();
+      console.log('📋 LISTA DE VARIÁVEIS DETECTADAS NO CONTAINER:');
+      console.log(allVars.join(', '));
 
       let email = (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || '').trim();
       let key = (process.env.GOOGLE_PRIVATE_KEY || '').trim();
 
-      // Limpeza de aspas e caracteres de escape comuns vindos do Easypanel/Env
+      // 2. Lógica de Fallback (Busca inteligente por conteúdo)
+      if (!email || email.length < 5) {
+        console.log('🕵️‍♂️ Procurando email em outras variáveis...');
+        const candidate = allVars.find(v => {
+          const val = (process.env[v] || '');
+          return val.includes('@') && val.includes('gserviceaccount.com');
+        });
+        if (candidate) {
+          console.log(`💡 Encontrei um email provável na variável: ${candidate}`);
+          email = process.env[candidate].trim();
+        }
+      }
+
+      if (!key || key.length < 20) {
+        console.log('🕵️‍♂️ Procurando chave privada em outras variáveis...');
+        const candidate = allVars.find(v => (process.env[v] || '').includes('PRIVATE KEY'));
+        if (candidate) {
+          console.log(`💡 Encontrei uma chave provável na variável: ${candidate}`);
+          key = process.env[candidate].trim();
+        }
+      }
+
+      // Limpeza de aspas
       email = email.replace(/^['"]|['"]$/g, '');
       key = key.replace(/^['"]|['"]$/g, '');
 
       if (!email || !key) {
-        console.warn('⚠️ Google Sheets Service: Email ou Chave faltando no ambiente.');
+        console.warn('❌ [V1.1.3] CRITICAL: Email ou Chave NÃO encontrados após scanner e fallback.');
       }
 
       // Tratamento intensivo da chave privada
-      // 1. Converte \\n literal em quebra de linha real
       key = key.replace(/\\n/g, '\n');
-
-      // 2. Garante BEGIN/END marcadores e remove lixo ao redor
       if (key && !key.includes('-----BEGIN PRIVATE KEY-----')) {
-        console.log('🛠️ Reconstruindo marcadores BEGIN/END...');
         const cleanKey = key.replace(/-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----|\s/g, '');
         key = `-----BEGIN PRIVATE KEY-----\n${cleanKey}\n-----END PRIVATE KEY-----`;
       }
 
-      console.log(`📧 Configurando JWT para: ${email} (Key Length: ${key.length})`);
+      console.log(`📧 Configurando JWT (V1.1.3) para: ${email || 'Vazio'} (Key Length: ${key.length})`);
 
       this.auth = new google.auth.JWT(
         email,
@@ -62,9 +85,9 @@ class GoogleSheetsService {
       );
 
       this.sheets = google.sheets({ version: 'v4', auth: this.auth });
-      console.log('✅ Google Sheets Service configurado (V1.1.2)');
+      console.log('✅ Google Sheets Service configurado (V1.1.3)');
     } catch (error) {
-      console.error('❌ Erro fatal ao configurar Google Sheets:', error);
+      console.error('❌ Erro fatal ao configurar Google Sheets V1.1.3:', error);
       throw error;
     }
   }
