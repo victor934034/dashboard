@@ -1,5 +1,5 @@
 FROM node:20-alpine
-# Forçando limpeza de cache do backend - 30/01/2026 14:55 - FINAL INTEGRATION PATCH
+# Forçando limpeza de cache do backend - 30/01/2026 15:05 - STABILITY V1.0.8
 
 # Instalar dependências do sistema para Puppeteer (WhatsApp) e Git para dependências do GitHub
 RUN apk add --no-cache \

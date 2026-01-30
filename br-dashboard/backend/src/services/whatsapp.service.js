@@ -12,7 +12,7 @@ class WhatsAppService {
     this.contactsCache = new Map();
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 5;
-    console.log('🚀 WhatsApp Service Patched Version 1.0.7 - TIMEOUT FIX');
+    console.log('🚀 WhatsApp Service Patched Version 1.0.8 - EXTREME TIMEOUT');
   }
 
   async initialize() {
@@ -36,7 +36,7 @@ class WhatsAppService {
             '--disable-gpu',
             '--disable-features=IsolateOrigins,site-per-process'
           ],
-          protocolTimeout: 60000
+          protocolTimeout: 120000
         }
       });
 

@@ -25,27 +25,43 @@ class GoogleSheetsService {
 
   async initialize() {
     try {
-      const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || '';
-      const privateKey = process.env.GOOGLE_PRIVATE_KEY
-        ? process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n')
-        : '';
+      let credentials = {};
+      const envEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || '';
+      const envKey = process.env.GOOGLE_PRIVATE_KEY || '';
 
-      if (!email || !privateKey) {
-        console.warn('⚠️ Google Sheets Service: Credenciais incompletas (GOOGLE_SERVICE_ACCOUNT_EMAIL ou GOOGLE_PRIVATE_KEY faltando).');
+      // Tenta detectar se o email é na verdade um JSON completo
+      if (envEmail.trim().startsWith('{')) {
+        try {
+          const json = JSON.parse(envEmail);
+          credentials = {
+            client_email: json.client_email,
+            private_key: json.private_key
+          };
+        } catch (e) {
+          console.warn('⚠️ Falha ao fazer parse de GOOGLE_SERVICE_ACCOUNT_EMAIL como JSON');
+        }
       }
 
-      this.auth = new google.auth.JWT(
-        email,
-        null,
-        privateKey,
-        [
+      // Se não era JSON, ou faltam campos, usa os campos individuais
+      if (!credentials.client_email || !credentials.private_key) {
+        credentials.client_email = envEmail;
+        credentials.private_key = envKey.replace(/\\n/g, '\n');
+      }
+
+      if (!credentials.client_email || !credentials.private_key) {
+        console.warn('⚠️ Google Sheets Service: Credenciais incompletas (Email ou Chave faltando).');
+      }
+
+      this.auth = new google.auth.GoogleAuth({
+        credentials,
+        scopes: [
           'https://www.googleapis.com/auth/spreadsheets',
           'https://www.googleapis.com/auth/drive.file'
         ]
-      );
+      });
 
       this.sheets = google.sheets({ version: 'v4', auth: this.auth });
-      console.log('✅ Google Sheets Service inicializado');
+      console.log('✅ Google Sheets Service inicializado (Smart Loader)');
     } catch (error) {
       console.error('❌ Erro ao inicializar Google Sheets:', error);
       throw error;
