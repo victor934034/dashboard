@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.next/
+.git/
+.env
+*.log
+.DS_Store
+.idea/
+.vscode/
+**/node_modules/
+**/dist/
+**/build/
+**/bin/
+**/obj/

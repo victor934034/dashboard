@@ -1,0 +1,25 @@
+2026/01/29-18:31:46.013 2bd4 Reusing MANIFEST C:\Users\escola\Downloads\Kimi_Agent_Iniciar BR Dashboard\br-dashboard\backend\vendas_awise\session\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/MANIFEST-000001
+2026/01/29-18:31:46.014 2bd4 Recovering log #58
+2026/01/29-18:31:46.015 2bd4 Reusing old log C:\Users\escola\Downloads\Kimi_Agent_Iniciar BR Dashboard\br-dashboard\backend\vendas_awise\session\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/000058.log 
+2026/01/29-18:31:46.016 2bd4 Delete type=2 #57
+2026/01/29-18:31:46.371 26a0 Level-0 table #63: started
+2026/01/29-18:31:46.375 26a0 Level-0 table #63: 21069 bytes OK
+2026/01/29-18:31:46.378 26a0 Delete type=0 #58
+2026/01/29-18:31:46.383 3584 Manual compaction at level-0 from '\x00\x1c\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x1d\x00\x00\x00' @ 0 : 0; will stop at (end)
+2026/01/29-18:31:46.386 3584 Level-0 table #65: started
+2026/01/29-18:31:46.389 3584 Level-0 table #65: 5098 bytes OK
+2026/01/29-18:31:46.390 3584 Delete type=0 #62
+2026/01/29-18:31:46.391 5420 Manual compaction at level-0 from '\x00\x1a\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x1b\x00\x00\x00' @ 0 : 0; will stop at '\x00!\x00\x00\x05' @ 20672 : 1
+2026/01/29-18:31:46.392 5420 Compacting 1@0 + 1@1 files
+2026/01/29-18:31:46.394 5420 Generated table #66@0: 638 keys, 5896 bytes
+2026/01/29-18:31:46.394 5420 Compacted 1@0 + 1@1 files => 5896 bytes
+2026/01/29-18:31:46.394 5420 compacted to: files[ 0 1 1 0 0 0 0 ]
+2026/01/29-18:31:46.395 5420 Delete type=2 #65
+2026/01/29-18:31:46.396 3584 Manual compaction at level-0 from '\x00!\x00\x00\x05' @ 20672 : 1 .. '\x00\x1b\x00\x00\x00' @ 0 : 0; will stop at (end)
+2026/01/29-18:31:46.396 3584 Manual compaction at level-1 from '\x00\x1a\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x1b\x00\x00\x00' @ 0 : 0; will stop at '\x00!\x00\x00\x05' @ 20672 : 1
+2026/01/29-18:31:46.396 3584 Compacting 1@1 + 1@2 files
+2026/01/29-18:31:46.398 3584 Generated table #67@1: 42 keys, 884 bytes
+2026/01/29-18:31:46.398 3584 Compacted 1@1 + 1@2 files => 884 bytes
+2026/01/29-18:31:46.398 3584 compacted to: files[ 0 0 1 0 0 0 0 ]
+2026/01/29-18:31:46.399 3584 Delete type=2 #66
+2026/01/29-18:31:46.399 3584 Manual compaction at level-1 from '\x00!\x00\x00\x05' @ 20672 : 1 .. '\x00\x1b\x00\x00\x00' @ 0 : 0; will stop at (end)
