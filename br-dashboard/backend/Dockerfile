@@ -1,4 +1,4 @@
-FROM node:20-alpine
+FROM public.ecr.aws/docker/library/node:20-alpine
 # Forçando limpeza de cache do backend - 30/01/2026 15:25 - RESILIENT V1.1.2
 
 # Instalar dependências do sistema para Puppeteer (WhatsApp) e Git para dependências do GitHub
