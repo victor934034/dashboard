@@ -8,6 +8,7 @@ RUN npm ci
 
 # Copiar código fonte e fazer build
 COPY . .
+RUN chmod -R +x node_modules/.bin
 RUN npm run build
 
 # Imagem de produção com Nginx
