@@ -12,7 +12,7 @@ class WhatsAppService {
     this.contactsCache = new Map();
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 5;
-    console.log('🚀 WhatsApp Service Patched Version 1.1.1 - DIAGNOSTIC MODE');
+    console.log('🚀 WhatsApp Service Patched Version 1.1.2 - RESILIENT MODE');
   }
 
   async initialize() {
