@@ -58,8 +58,8 @@ export const sheetsApi = {
 export const crmApi = {
   getLeads: () => api.get('/crm/leads'),
   createLead: (data: any) => api.post('/crm/leads', data),
-  updateLead: (id: string, data: any) => api.patch(`/crm/leads/${id}`, data),
-  deleteLead: (id: string) => api.delete(`/crm/leads/${id}`)
+  updateLead: (id: string | number, data: any) => api.patch(`/crm/leads/${id}`, data),
+  deleteLead: (id: string | number) => api.delete(`/crm/leads/${id}`)
 };
 
 // Pedidos API
@@ -79,7 +79,7 @@ export const campanhasApi = {
   getTexto: () => api.get('/campanhas/texto'),
   clearCache: () => api.post('/campanhas/clear-cache'),
   create: (data: any) => api.post('/campanhas', data),
-  delete: (id: string) => api.delete(`/campanhas/${id}`)
+  delete: (id: string | number) => api.delete(`/campanhas/${id}`)
 };
 
 // Auth API

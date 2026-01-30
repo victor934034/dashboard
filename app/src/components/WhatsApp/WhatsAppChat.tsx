@@ -183,14 +183,6 @@ export default function WhatsAppChat() {
     }
   };
 
-  const updateChatUnread = (chatId: string) => {
-    setChats(prev => prev.map(chat =>
-      chat.id === chatId
-        ? { ...chat, unreadCount: (chat.unreadCount || 0) + 1 }
-        : chat
-    ));
-  };
-
   const updateChatAIStatus = (chatId: string, blocked: boolean) => {
     setChats(prev => prev.map(chat =>
       chat.id === chatId ? { ...chat, aiBlocked: blocked } : chat

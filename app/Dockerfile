@@ -1,5 +1,5 @@
 FROM node:20.11-slim AS builder
-# Forçando limpeza completa de cache - 30/01/2026 12:45
+# Forçando limpeza completa de cache - 30/01/2026 12:55 - Fix TS Errors
 
 WORKDIR /app
 

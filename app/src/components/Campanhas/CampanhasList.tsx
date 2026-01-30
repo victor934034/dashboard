@@ -54,7 +54,7 @@ export default function CampanhasList() {
     }
   };
 
-  const deleteCampanha = async (id: string) => {
+  const deleteCampanha = async (id: string | number) => {
     if (!confirm('Tem certeza que deseja excluir esta campanha?')) return;
     try {
       await campanhasApi.delete(id);
