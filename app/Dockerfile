@@ -1,5 +1,5 @@
 FROM node:22-slim AS builder
-# Forçando limpeza completa de cache - 30/01/2026 13:30 - Revert to Root Path (/)
+# Forçando limpeza completa de cache - 30/01/2026 13:35 - Separated Frontend/Backend Link
 
 WORKDIR /app
 
