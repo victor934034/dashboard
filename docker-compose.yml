@@ -1,13 +1,13 @@
 services:
-  frontend:
+  dashboard-frontend:
     build:
       context: ./app
       dockerfile: Dockerfile
     depends_on:
-      - backend
+      - dashboard_dashboard1
     restart: always
 
-  backend:
+  dashboard_dashboard1:
     build:
       context: ./br-dashboard/backend
       dockerfile: Dockerfile
