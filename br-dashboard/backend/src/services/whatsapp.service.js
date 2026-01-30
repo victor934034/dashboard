@@ -12,7 +12,7 @@ class WhatsAppService {
     this.contactsCache = new Map();
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 5;
-    console.log('🚀 WhatsApp Service Patched Version 1.0.4 - LOCKFILE SYNCED');
+    console.log('🚀 WhatsApp Service Patched Version 1.0.5 - SYNC FIX');
   }
 
   async initialize() {
@@ -376,10 +376,7 @@ class WhatsAppService {
       await new Promise(resolve => setTimeout(resolve, 3000));
 
       console.log('🔄 Sincronizando chats pela primeira vez...');
-      const refreshPromise = this.refreshChatsCache();
-      const timeoutPromise = new Promise(resolve => setTimeout(() => resolve([]), 5000));
-
-      return await Promise.race([refreshPromise, timeoutPromise]);
+      return await this.refreshChatsCache();
     } catch (error) {
       console.error('Erro ao buscar chats:', error.message);
       return [];
@@ -395,6 +392,7 @@ class WhatsAppService {
       if (!page || page.isClosed()) return this.chatsCache;
 
       const rawChats = await this.client.getChats();
+      console.log(`📥 Encontrados ${rawChats.length} chats brutos no WhatsApp`);
       const formattedChats = await Promise.all(
         rawChats.map(async (chat) => {
           try {
