@@ -58,7 +58,7 @@ export default function EstoqueManager() {
   const [data, setData] = useState<string[][]>([]);
   const [headers, setHeaders] = useState<string[]>([]);
   const [lowStock, setLowStock] = useState<EstoqueItem[]>([]);
-  const [loading, setLoading] = useState(false);
+  // const [loading, setLoading] = useState(false); // Removed unused state
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [userId] = useState('user-1');
 
