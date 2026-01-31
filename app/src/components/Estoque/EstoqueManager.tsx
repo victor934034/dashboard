@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, memo } from 'react';
-import { Table, AlertTriangle, Plus, Trash2, Save, Link as LinkIcon, Loader2, RefreshCcw } from 'lucide-react';
+import { Table, AlertTriangle, Plus, Trash2, Save, Loader2, RefreshCcw } from 'lucide-react';
 import { sheetsApi } from '@/services/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -53,7 +53,7 @@ const EstoqueRow = memo(({
 EstoqueRow.displayName = 'EstoqueRow';
 
 export default function EstoqueManager() {
-  const [spreadsheetUrl, setSpreadsheetUrl] = useState('');
+  // const [spreadsheetUrl, setSpreadsheetUrl] = useState(''); // Removed unused state
   const [isConnected, setIsConnected] = useState(false);
   const [data, setData] = useState<string[][]>([]);
   const [headers, setHeaders] = useState<string[]>([]);
