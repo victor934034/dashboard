@@ -1,17 +1,15 @@
 import { NavLink } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  MessageSquare, 
-  Table, 
-  Kanban, 
-  ShoppingCart, 
+import {
+  LayoutDashboard,
+  Table,
+  Kanban,
+  ShoppingCart,
   Megaphone,
   Settings
 } from 'lucide-react';
 
 const menuItems = [
   { path: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/whatsapp', label: 'WhatsApp', icon: MessageSquare },
   { path: '/estoque', label: 'Estoque', icon: Table },
   { path: '/crm', label: 'CRM', icon: Kanban },
   { path: '/pedidos', label: 'Pedidos', icon: ShoppingCart },
@@ -39,10 +37,9 @@ export default function Sidebar() {
                 <NavLink
                   to={item.path}
                   className={({ isActive }: { isActive: boolean }) =>
-                    `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                      isActive
-                        ? 'bg-primary text-primary-foreground'
-                        : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                    `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:bg-accent hover:text-foreground'
                     }`
                   }
                 >

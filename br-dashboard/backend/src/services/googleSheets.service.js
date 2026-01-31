@@ -25,65 +25,37 @@ class GoogleSheetsService {
 
   async initialize() {
     try {
-      console.log('🔍 [V1.1.5] Sniper Mode: Scanner de Ambiente Endurecido...');
-
-      const allVars = Object.keys(process.env).sort();
-      console.log('📋 DEBUG: TODAS AS VARIÁVEIS RECEBIDAS NO CONTAINER:');
-      console.log(allVars.join(', '));
+      console.log('🔍 [V1.2.0] Carregando Credenciais...');
 
       let email = '';
       let key = '';
 
-      // 1. Scanner de JSON (Ainda útil se o usuário colar o arquivo todo)
-      for (const varName of allVars) {
-        const value = (process.env[varName] || '').trim();
-        if (value.startsWith('{') && value.endsWith('}')) {
-          try {
-            const json = JSON.parse(value);
-            if (json.client_email && json.private_key) {
-              console.log(`💡 Credenciais extraídas via JSON na variável: ${varName}`);
-              email = json.client_email;
-              key = json.private_key;
-              break;
-            }
-          } catch (e) { }
+      // Tentar carregar do arquivo service-account.json
+      try {
+        const serviceAccount = require('../config/service-account.json');
+        if (serviceAccount && serviceAccount.client_email && serviceAccount.private_key) {
+          console.log('✅ Credenciais carregadas do arquivo local service-account.json');
+          email = serviceAccount.client_email;
+          key = serviceAccount.private_key;
         }
+      } catch (e) {
+        console.warn('⚠️ Arquivo service-account.json não encontrado. Tentando variáveis de ambiente.');
       }
 
-      // 2. Sniper Mode: Busca agressiva por conteúdo se não achou JSON
+      // Fallback para variáveis de ambiente
       if (!email || !key) {
-        console.log('🕵️‍♂️ Sniper Mode: Buscando padrões de credenciais em todas as variáveis...');
-        for (const varName of allVars) {
-          const value = (process.env[varName] || '').trim();
-
-          // Busca Email
-          if (!email && value.includes('@') && value.includes('gserviceaccount.com')) {
-            console.log(`🎯 Email encontrado na variável: ${varName}`);
-            email = value;
-          }
-
-          // Busca Chave (Mesmo sem marcadores, se for grande e parecer base64)
-          if (!key && (value.includes('BEGIN PRIVATE KEY') || (value.length > 500 && /^[A-Za-z0-9+/=\s\\n]+$/.test(value)))) {
-            console.log(`🎯 Chave provável encontrada na variável: ${varName}`);
-            key = value;
-          }
-        }
+        if (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL) email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+        if (process.env.GOOGLE_PRIVATE_KEY) key = process.env.GOOGLE_PRIVATE_KEY;
       }
 
-      // Limpeza final de aspas e conversão de \n literais
-      email = (email || '').replace(/^['"]|['"]$/g, '').trim();
-      key = (key || '').replace(/^['"]|['"]$/g, '').replace(/\\n/g, '\n').trim();
-
-      // Reconstrução de marcadores se necessário
-      if (key && !key.includes('-----BEGIN PRIVATE KEY-----')) {
-        const cleanKey = key.replace(/-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----|\s/g, '');
-        key = `-----BEGIN PRIVATE KEY-----\n${cleanKey}\n-----END PRIVATE KEY-----`;
-      }
+      email = (email || '').trim();
+      key = (key || '').replace(/\\n/g, '\n').trim();
 
       if (!email || !key) {
-        console.warn('❌ [V1.1.5] ERRO CRÍTICO: Scanner Sniper não encontrou nada.');
+        console.error('❌ [V1.2.0] ERRO CRÍTICO: Nenhuma credencial encontrada. Verifique service-account.json ou variáveis de ambiente.');
+        throw new Error('Credenciais do Google Sheets não encontradas');
       } else {
-        console.log(`📧 JWT Configurado (V1.1.5) | Email: ${email.substring(0, 15)}... | Key: ${key.length} bytes`);
+        console.log(`📧 Autenticando: ${email}`);
       }
 
       this.auth = new google.auth.JWT(
@@ -97,9 +69,9 @@ class GoogleSheetsService {
       );
 
       this.sheets = google.sheets({ version: 'v4', auth: this.auth });
-      console.log('✅ Google Sheets Service pronto (V1.1.6)');
+      console.log('✅ Google Sheets Service pronto (V1.2.0)');
     } catch (error) {
-      console.error('❌ Erro fatal no Sniper Scanner V1.1.6:', error);
+      console.error('❌ Erro fatal Google Sheets V1.2.0:', error);
       throw error;
     }
   }

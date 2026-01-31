@@ -9,14 +9,12 @@ const { Server } = require('socket.io');
 // Importar rotas
 const authRoutes = require('./routes/auth.routes');
 const sheetsRoutes = require('./routes/sheets.routes');
-const whatsappRoutes = require('./routes/whatsapp.routes');
 const crmRoutes = require('./routes/crm.routes');
 const pedidosRoutes = require('./routes/pedidos.routes');
 const campanhasRoutes = require('./routes/campanhas.routes');
 const webhooksRoutes = require('./routes/webhooks.routes');
 
 // Importar serviços
-const whatsappService = require('./services/whatsapp.service');
 const googleSheetsService = require('./services/googleSheets.service');
 
 const app = express();
@@ -48,7 +46,6 @@ app.use(morgan('combined'));
 // Rotas
 app.use('/api/auth', authRoutes);
 app.use('/api/sheets', sheetsRoutes);
-app.use('/api/whatsapp', whatsappRoutes);
 app.use('/api/crm', crmRoutes);
 app.use('/api/pedidos', pedidosRoutes);
 app.use('/api/campanhas', campanhasRoutes);
@@ -72,7 +69,7 @@ app.get('/health', (req, res) => {
       heapUsed: `${Math.round(memory.heapUsed / 1024 / 1024)}MB`
     },
     services: {
-      whatsapp: whatsappService.isReady ? 'connected' : 'disconnected'
+      // Nenhum serviço adicional no momento
     }
   });
 });
@@ -114,10 +111,6 @@ async function initializeServices() {
     // Inicializar Google Sheets
     await googleSheetsService.initialize();
     console.log('✅ Google Sheets inicializado');
-
-    // Inicializar WhatsApp
-    await whatsappService.initialize();
-    console.log('✅ WhatsApp inicializado');
 
   } catch (error) {
     console.error('❌ Erro ao inicializar serviços:', error);

@@ -1,12 +1,10 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
   LayoutDashboard,
-  MessageSquare,
   ShoppingCart,
   Users,
   TrendingUp,
   AlertTriangle,
-  Bot,
   RefreshCw,
   Clock,
   Megaphone,
@@ -16,13 +14,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { initializeSocket } from '@/services/socket';
-import { whatsappApi, pedidosApi, sheetsApi, crmApi, campanhasApi } from '@/services/api';
+import { pedidosApi, sheetsApi, crmApi, campanhasApi } from '@/services/api';
 
 export default function Dashboard() {
   const [stats, setStats] = useState({
-    whatsappStatus: 'disconnected',
-    totalChats: 0,
-    blockedChats: 0,
     totalPedidos: 0,
     pendentes: 0,
     faturamento: 0,
@@ -37,8 +32,7 @@ export default function Dashboard() {
     try {
       if (!silent) setLoading(true);
 
-      const [whatsappRes, pedidosRes, estoqueRes, crmRes, campanhasRes] = await Promise.all([
-        whatsappApi.getStatus(),
+      const [pedidosRes, estoqueRes, crmRes, campanhasRes] = await Promise.all([
         pedidosApi.getStats(),
         sheetsApi.getLowStock('user-1'),
         crmApi.getLeads(),
@@ -46,9 +40,6 @@ export default function Dashboard() {
       ]);
 
       setStats({
-        whatsappStatus: whatsappRes.data.isReady ? 'connected' : 'disconnected',
-        totalChats: whatsappRes.data.connectedChats || 0,
-        blockedChats: whatsappRes.data.blockedChats || 0,
         totalPedidos: pedidosRes.data.stats?.total || 0,
         pendentes: pedidosRes.data.stats?.pendentes || 0,
         faturamento: pedidosRes.data.stats?.faturamento || 0,
@@ -75,15 +66,6 @@ export default function Dashboard() {
 
     const socket = initializeSocket();
 
-    socket.on('whatsapp:ready', () => {
-      setStats(prev => ({ ...prev, whatsappStatus: 'connected' }));
-      loadStats(true);
-    });
-
-    socket.on('whatsapp:disconnected', () => {
-      setStats(prev => ({ ...prev, whatsappStatus: 'disconnected' }));
-    });
-
     socket.on('novo-pedido', () => {
       loadStats(true);
     });
@@ -95,8 +77,6 @@ export default function Dashboard() {
 
     return () => {
       clearInterval(interval);
-      socket.off('whatsapp:ready');
-      socket.off('whatsapp:disconnected');
       socket.off('novo-pedido');
       socket.off('sheets:updated');
       socket.off('sheets:row-added');
@@ -135,28 +115,11 @@ export default function Dashboard() {
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             {loading ? 'Atualizando...' : 'Atualizar agora'}
           </Button>
-          <Badge variant={stats.whatsappStatus === 'connected' ? 'default' : 'destructive'} className="h-7">
-            WhatsApp {stats.whatsappStatus === 'connected' ? 'Conectado' : 'Desconectado'}
-          </Badge>
         </div>
       </div>
 
       {/* Cards de Estatísticas Principais */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Conversas WhatsApp
-            </CardTitle>
-            <MessageSquare className="w-4 h-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalChats}</div>
-            <p className="text-xs text-muted-foreground">
-              {stats.blockedChats} com IA bloqueada
-            </p>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -248,26 +211,7 @@ export default function Dashboard() {
       </div>
 
       {/* Status dos Sistemas */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Bot className="w-4 h-4" /> IA & WhatsApp
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-sm space-y-2">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Status:</span>
-              <span className={stats.whatsappStatus === 'connected' ? 'text-green-600' : 'text-destructive'}>
-                {stats.whatsappStatus === 'connected' ? 'Online' : 'Offline'}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">IA Bloqueada:</span>
-              <span className="font-medium">{stats.blockedChats} chats</span>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
         <Card>
           <CardHeader>

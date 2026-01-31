@@ -12,3 +12,18 @@ dist/
 **/build/
 **/bin/
 **/obj/
+
+# Sensitive files
+**/service-account.json
+**/.env
+**/.env.local
+**/.env.production
+
+# WhatsApp session data
+**/.wwebjs_cache/
+**/.wwebjs_auth/
+**/session/
+**/vendas_awise/
+
+# Docker
+docker-compose.override.yml

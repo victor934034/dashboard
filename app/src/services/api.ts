@@ -18,7 +18,8 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// WhatsApp API
+// WhatsApp API - REMOVED
+/*
 export const whatsappApi = {
   getChats: () => api.get('/whatsapp/chats'),
   getMessages: (chatId: string, limit = 50) =>
@@ -33,6 +34,7 @@ export const whatsappApi = {
     api.get(`/whatsapp/ai-status/${chatId}`),
   getStatus: () => api.get('/whatsapp/status')
 };
+*/
 
 // Google Sheets API
 export const sheetsApi = {

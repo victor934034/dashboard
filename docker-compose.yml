@@ -17,6 +17,8 @@ services:
       - FRONTEND_URL=https://dashboard-dashboard1.zdc13k.easypanel.host/
       - DATABASE_URL=postgresql://postgres:senha_segura@postgres:5432/brdashboard
       - REDIS_URL=redis://redis:6379
+      - GOOGLE_SERVICE_ACCOUNT_EMAIL=${GOOGLE_SERVICE_ACCOUNT_EMAIL}
+      - GOOGLE_PRIVATE_KEY=${GOOGLE_PRIVATE_KEY}
     depends_on:
       - postgres
       - redis

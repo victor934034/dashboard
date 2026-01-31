@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Toaster } from '@/components/ui/sonner';
 import Layout from '@/components/Layout/Layout';
 import Dashboard from '@/pages/Dashboard';
-import WhatsApp from '@/pages/WhatsApp';
 import Estoque from '@/pages/Estoque';
 import CRM from '@/pages/CRM';
 import Pedidos from '@/pages/Pedidos';
@@ -31,7 +30,6 @@ function App() {
               <Layout>
                 <Routes>
                   <Route path="/" element={<Dashboard />} />
-                  <Route path="/whatsapp" element={<WhatsApp />} />
                   <Route path="/estoque" element={<Estoque />} />
                   <Route path="/crm" element={<CRM />} />
                   <Route path="/pedidos" element={<Pedidos />} />
