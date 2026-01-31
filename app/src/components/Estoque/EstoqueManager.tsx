@@ -168,7 +168,7 @@ const handleCellChange = useCallback((rowIndex: number, colIndex: number, value:
 const syncCell = useCallback(async (rowIndex: number, colIndex: number, value: string) => {
   try {
     const cellRef = `${String.fromCharCode(65 + colIndex)}${rowIndex + 2}`;
-    await sheetsApi.updateCell(userId, cellRef, value);
+    await sheetsApi.updateCell(userId, cellRef, value, SHEET_NAME);
     loadLowStock();
   } catch (error) {
     toast.error('Erro ao sincronizar célula. Revertendo...');
@@ -183,7 +183,10 @@ const addRow = useCallback(async () => {
       setData(prev => [...prev, rowToAdd]);
       setNewRow(new Array(headers.length).fill(''));
 
-      await sheetsApi.addRow(userId, rowToAdd);
+      setNewRow(new Array(headers.length).fill(''));
+
+      await sheetsApi.addRow(userId, rowToAdd, SHEET_NAME);
+      toast.success('Produto adicionado');
       toast.success('Produto adicionado');
       loadData(true);
     } catch (error) {
@@ -201,7 +204,7 @@ const deleteRow = useCallback(async (rowIndex: number) => {
   });
 
   try {
-    await sheetsApi.deleteRow(userId, rowIndex + 1);
+    await sheetsApi.deleteRow(userId, rowIndex + 1, SHEET_ID);
     toast.success('Linha removida');
     loadData(true);
   } catch (error) {
