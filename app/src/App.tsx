@@ -8,6 +8,7 @@ import CRM from '@/pages/CRM';
 import Pedidos from '@/pages/Pedidos';
 import Campanhas from '@/pages/Campanhas';
 import Login from '@/pages/Login';
+import Config from '@/pages/Config';
 
 function App() {
   const isAuthenticated = () => {
@@ -34,6 +35,7 @@ function App() {
                   <Route path="/crm" element={<CRM />} />
                   <Route path="/pedidos" element={<Pedidos />} />
                   <Route path="/campanhas" element={<Campanhas />} />
+                  <Route path="/config" element={<Config />} />
                 </Routes>
               </Layout>
             </ProtectedRoute>

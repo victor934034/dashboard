@@ -71,7 +71,8 @@ export const pedidosApi = {
   getById: (id: string) => api.get(`/pedidos/${id}`),
   updateStatus: (id: string, status: string) =>
     api.patch(`/pedidos/${id}/status`, { status }),
-  getStats: () => api.get('/pedidos/stats/overview')
+  getStats: () => api.get('/pedidos/stats/overview'),
+  delete: (id: string | number) => api.delete(`/pedidos/${id}`)
 };
 
 // Campanhas API
@@ -81,6 +82,7 @@ export const campanhasApi = {
   getTexto: () => api.get('/campanhas/texto'),
   clearCache: () => api.post('/campanhas/clear-cache'),
   create: (data: any) => api.post('/campanhas', data),
+  update: (id: string | number, data: any) => api.put(`/campanhas/${id}`, data),
   delete: (id: string | number) => api.delete(`/campanhas/${id}`)
 };
 

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { ShoppingCart, Package, CheckCircle, XCircle, Clock, TrendingUp } from 'lucide-react';
+import { ShoppingCart, Package, CheckCircle, XCircle, Clock, TrendingUp, Trash2 } from 'lucide-react';
 import { pedidosApi } from '@/services/api';
 import { initializeSocket } from '@/services/socket';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -30,9 +31,9 @@ export default function PedidosList() {
   useEffect(() => {
     loadPedidos();
     loadStats();
-    
+
     const socket = initializeSocket();
-    
+
     socket.on('novo-pedido', (pedido: Pedido) => {
       toast.success(`Novo pedido de ${pedido.cliente}!`);
       setPedidos(prev => [pedido, ...prev]);
@@ -77,6 +78,18 @@ export default function PedidosList() {
       loadStats();
     } catch (error) {
       toast.error('Erro ao atualizar status');
+    }
+  };
+
+  const deletePedido = async (id: string) => {
+    if (!confirm('Tem certeza que deseja excluir este pedido?')) return;
+    try {
+      await pedidosApi.delete(id);
+      toast.success('Pedido excluído com sucesso!');
+      loadPedidos();
+      loadStats();
+    } catch (error) {
+      toast.error('Erro ao excluir pedido');
     }
   };
 
@@ -205,6 +218,16 @@ export default function PedidosList() {
                               <SelectItem value="cancelado">Cancelado</SelectItem>
                             </SelectContent>
                           </Select>
+
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-muted-foreground hover:text-destructive"
+                            onClick={() => deletePedido(pedido.id)}
+                            title="Excluir pedido"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </Button>
                         </div>
                       </div>
                     </CardContent>
