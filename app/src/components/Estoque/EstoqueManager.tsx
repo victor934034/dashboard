@@ -80,7 +80,7 @@ export default function EstoqueManager() {
 
   const loadData = useCallback(async (silent = false) => {
     try {
-      if (!silent && data.length === 0) setLoading(true);
+      if (!silent && data.length === 0) { /* removed setLoading */ }
       else setIsRefreshing(true);
 
       const response = await sheetsApi.read(userId, undefined, SHEET_NAME);
@@ -94,7 +94,7 @@ export default function EstoqueManager() {
     } catch (error) {
       if (!silent) toast.error('Erro ao carregar dados');
     } finally {
-      setLoading(false);
+      // setLoading(false);
       setIsRefreshing(false);
     }
   }, [userId, data.length]);
