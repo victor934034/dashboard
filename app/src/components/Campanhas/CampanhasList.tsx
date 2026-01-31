@@ -51,6 +51,7 @@ export default function CampanhasList() {
       toast.success('Campanha criada com sucesso!');
       setNewCampanha({ nome: '', descricao: '', link: '', ativa: true });
       loadCampanhas();
+      setIsDialogOpen(false);
     } catch (error) {
       toast.error('Erro ao criar campanha');
     }
