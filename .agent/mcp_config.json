@@ -1,0 +1,19 @@
+{
+    "mcpServers": {
+        "n8n-mcp": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "n8n-mcp@latest"
+            ],
+            "env": {
+                "MCP_MODE": "stdio",
+                "LOG_LEVEL": "error",
+                "DISABLE_CONSOLE_OUTPUT": "true",
+                "N8N_API_URL": "https://vendas-n8n.zdc13k.easypanel.host/api/v1",
+                "N8N_BASE_URL": "https://vendas-n8n.zdc13k.easypanel.host",
+                "N8N_API_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1M2I2MTViMi1jMTRkLTQ3NmItODk4NC0zZWZhZjRlMzM2M2IiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwiaWF0IjoxNzY5ODY2NTg1fQ.4Pglojh-LabHNTWsYO4R6KfmiYoZLreVhcbCtOzGaT0"
+            }
+        }
+    }
+}

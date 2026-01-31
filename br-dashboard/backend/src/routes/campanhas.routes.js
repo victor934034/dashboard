@@ -55,6 +55,20 @@ router.post('/', async (req, res) => {
   }
 });
 
+// Atualizar campanha (PUT)
+router.put('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await campanhasService.updateCampanha(id, req.body);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // Deletar campanha
 router.delete('/:id', async (req, res) => {
   try {

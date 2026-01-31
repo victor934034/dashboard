@@ -1,27 +1,26 @@
 const express = require('express');
 const router = express.Router();
-
-// Lista de pedidos em memória (substituir por banco de dados em produção)
-let pedidos = [];
+const pedidosService = require('../services/pedidos.service');
 
 // Listar todos os pedidos
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const { status, limit = 50 } = req.query;
-    
-    let result = pedidos;
-    
-    if (status) {
-      result = result.filter(p => p.status === status);
-    }
-    
-    result = result.slice(0, parseInt(limit));
-    
-    res.json({
-      success: true,
-      pedidos: result,
-      total: result.length
+    const result = await pedidosService.getPedidos({ status, limit });
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
     });
+  }
+});
+
+// Estatísticas de pedidos (antes do :id para não conflitar)
+router.get('/stats/overview', async (req, res) => {
+  try {
+    const result = await pedidosService.getStats();
+    res.json(result);
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -31,22 +30,16 @@ router.get('/', (req, res) => {
 });
 
 // Buscar pedido por ID
-router.get('/:id', (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const pedido = pedidos.find(p => p.id === id);
-    
-    if (!pedido) {
-      return res.status(404).json({
-        success: false,
-        error: 'Pedido não encontrado'
-      });
+    const result = await pedidosService.getPedidoById(id);
+
+    if (!result.success) {
+      return res.status(404).json(result);
     }
-    
-    res.json({
-      success: true,
-      pedido
-    });
+
+    res.json(result);
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -56,27 +49,18 @@ router.get('/:id', (req, res) => {
 });
 
 // Atualizar status do pedido
-router.patch('/:id/status', (req, res) => {
+router.patch('/:id/status', async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
-    
-    const pedidoIndex = pedidos.findIndex(p => p.id === id);
-    
-    if (pedidoIndex === -1) {
-      return res.status(404).json({
-        success: false,
-        error: 'Pedido não encontrado'
-      });
+
+    const result = await pedidosService.updatePedido(id, { status });
+
+    if (!result.success) {
+      return res.status(404).json(result);
     }
-    
-    pedidos[pedidoIndex].status = status;
-    pedidos[pedidoIndex].updatedAt = new Date();
-    
-    res.json({
-      success: true,
-      pedido: pedidos[pedidoIndex]
-    });
+
+    res.json(result);
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -85,30 +69,31 @@ router.patch('/:id/status', (req, res) => {
   }
 });
 
-// Estatísticas de pedidos
-router.get('/stats/overview', (req, res) => {
+// Atualizar pedido completo
+router.patch('/:id', async (req, res) => {
   try {
-    const total = pedidos.length;
-    const pendentes = pedidos.filter(p => p.status === 'pendente').length;
-    const processando = pedidos.filter(p => p.status === 'processando').length;
-    const concluidos = pedidos.filter(p => p.status === 'concluido').length;
-    const cancelados = pedidos.filter(p => p.status === 'cancelado').length;
-    
-    const faturamento = pedidos
-      .filter(p => p.status === 'concluido')
-      .reduce((acc, p) => acc + p.total, 0);
-    
-    res.json({
-      success: true,
-      stats: {
-        total,
-        pendentes,
-        processando,
-        concluidos,
-        cancelados,
-        faturamento
-      }
+    const { id } = req.params;
+    const result = await pedidosService.updatePedido(id, req.body);
+
+    if (!result.success) {
+      return res.status(404).json(result);
+    }
+
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
     });
+  }
+});
+
+// Deletar pedido
+router.delete('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await pedidosService.deletePedido(id);
+    res.json(result);
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -118,3 +103,4 @@ router.get('/stats/overview', (req, res) => {
 });
 
 module.exports = router;
+

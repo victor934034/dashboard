@@ -27,3 +27,6 @@ dist/
 
 # Docker
 docker-compose.override.yml
+
+# Antigravity Skills
+.agent/skills/

@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const pedidosService = require('../services/pedidos.service');
 
 // WEBHOOK: RECEBER PEDIDOS DO N8N
 router.post('/pedido', async (req, res) => {
@@ -22,37 +23,33 @@ router.post('/pedido', async (req, res) => {
       });
     }
 
-    const pedido = {
-      id: `PED-${Date.now()}`,
+    const pedidoData = {
       cliente,
-      itens: typeof itens === 'string' ? itens : JSON.stringify(itens),
-      total: parseFloat(total),
-      endereco: endereco || 'Não informado',
-      whatsapp: whatsapp || 'Não informado',
-      data_hora: data_hora || new Date().toLocaleString('pt-BR', {
-        timeZone: 'America/Sao_Paulo'
-      }),
-      status: 'pendente',
-      origem: 'whatsapp',
-      createdAt: new Date()
+      itens,
+      total,
+      endereco,
+      whatsapp,
+      data_hora,
+      origem: 'whatsapp'
     };
 
-    console.log('✅ Pedido processado:', pedido.id);
+    // Salvar usando o serviço persistente
+    const result = await pedidosService.addPedido(pedidoData);
 
     if (global.io) {
-      global.io.emit('novo-pedido', pedido);
+      global.io.emit('novo-pedido', result.pedido);
       global.io.emit('notification', {
         type: 'novo-pedido',
         title: 'Novo Pedido Recebido!',
         message: `Pedido de ${cliente} - R$ ${total}`,
-        pedido
+        pedido: result.pedido
       });
     }
 
     res.json({
       success: true,
       message: `✅ Sucesso! O pedido de ${cliente} foi recebido e salvo.`,
-      pedidoId: pedido.id,
+      pedidoId: result.pedido.id,
       timestamp: new Date().toISOString()
     });
 
