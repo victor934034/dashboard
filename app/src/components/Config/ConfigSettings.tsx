@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
-import { Settings, Save, Server, Database, Key } from 'lucide-react';
+import { useState } from 'react';
+import { Settings, Save, Server, Database } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
+// import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 
 export default function ConfigSettings() {
