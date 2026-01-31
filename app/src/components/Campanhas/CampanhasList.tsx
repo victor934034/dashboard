@@ -25,6 +25,8 @@ export default function CampanhasList() {
     loadCampanhas();
   }, []);
 
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
   const loadCampanhas = async () => {
     try {
       setLoading(true);
@@ -82,7 +84,7 @@ export default function CampanhasList() {
             <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Atualizar
           </Button>
-          <Dialog>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button>
                 <Plus className="w-4 h-4 mr-2" />
@@ -145,9 +147,7 @@ export default function CampanhasList() {
             <Megaphone className="w-16 h-16 mb-4 opacity-20" />
             <h3 className="text-lg font-medium text-foreground mb-1">Nenhuma campanha ativa</h3>
             <p className="max-w-[300px] mb-6">Crie sua primeira campanha para que ela apareça aqui e na IA do WhatsApp.</p>
-            <DialogTrigger asChild>
-              <Button variant="outline">Adicionar agora</Button>
-            </DialogTrigger>
+            <Button variant="outline" onClick={() => setIsDialogOpen(true)}>Adicionar agora</Button>
           </CardContent>
         </Card>
       ) : (
