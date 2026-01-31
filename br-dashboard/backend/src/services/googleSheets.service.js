@@ -292,7 +292,8 @@ class GoogleSheetsService {
 
   async getProductsLowStock(userId) {
     try {
-      const data = await this.readSheet(userId);
+      // Hardcoded sheet name as requested for stability
+      const data = await this.readSheet(userId, 'A1:Z1000', 'Relatório de Produtos');
       if (!data.data.length) return [];
 
       const headers = data.data[0];
