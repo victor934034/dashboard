@@ -133,24 +133,7 @@ export default function EstoqueManager() {
     checkConnection();
   }, [checkConnection]);
 
-  const connectSpreadsheet = useCallback(async () => {
-    if (!spreadsheetUrl) {
-      toast.error('Informe a URL da planilha');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      await sheetsApi.connect(userId, spreadsheetUrl);
-      setIsConnected(true);
-      toast.success('Planilha conectada com sucesso!');
-      loadData();
-    } catch (error) {
-      toast.error('Erro ao conectar planilha');
-    } finally {
-      setLoading(false);
-    }
-  }, [userId, spreadsheetUrl, loadData]);
+  // connectSpreadsheet removed
 
   const handleCellChange = useCallback((rowIndex: number, colIndex: number, value: string) => {
     setData(prev => {
