@@ -2,6 +2,19 @@ const express = require('express');
 const router = express.Router();
 const pedidosService = require('../services/pedidos.service');
 
+// Criar novo pedido (Compatível com n8n)
+router.post('/', async (req, res) => {
+  try {
+    const result = await pedidosService.addPedido(req.body);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // Listar todos os pedidos
 router.get('/', async (req, res) => {
   try {

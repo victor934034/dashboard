@@ -7,7 +7,8 @@ router.get('/', async (req, res) => {
   try {
     const useCache = req.query.cache !== 'false';
     const result = await campanhasService.getCampanhas(useCache);
-    res.json(result);
+    // Retornar array direto para compatibilidade com n8n
+    res.json(result.campanhas || []);
   } catch (error) {
     res.status(500).json({
       success: false,

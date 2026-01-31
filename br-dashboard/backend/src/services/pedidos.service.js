@@ -77,7 +77,8 @@ class PedidosService {
                 data_hora: pedidoData.data_hora || new Date().toLocaleString('pt-BR', {
                     timeZone: 'America/Sao_Paulo'
                 }),
-                status: pedidoData.status || 'pendente',
+                status: pedidoData.status_pedido || pedidoData.status || 'pendente', // Mapeia status_pedido do n8n
+                etapa: pedidoData.etapa || 'Novo', // Mapeia etapa do CRM
                 origem: pedidoData.origem || 'whatsapp',
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()

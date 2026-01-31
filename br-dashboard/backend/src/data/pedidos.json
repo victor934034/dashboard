@@ -1,15 +1,1 @@
-[
-  {
-    "id": "PED-1769868587757",
-    "cliente": "Cliente Teste Integração",
-    "itens": "2x Teste Item",
-    "total": 200,
-    "endereco": "Rua Teste Integration",
-    "whatsapp": "5511888888888",
-    "data_hora": "31/01/2026, 11:09:47",
-    "status": "pendente",
-    "origem": "whatsapp",
-    "createdAt": "2026-01-31T14:09:47.869Z",
-    "updatedAt": "2026-01-31T14:09:47.869Z"
-  }
-]
+[]

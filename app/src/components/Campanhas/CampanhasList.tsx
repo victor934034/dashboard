@@ -31,7 +31,11 @@ export default function CampanhasList() {
     try {
       setLoading(true);
       const response = await campanhasApi.getAll();
-      if (response.data.success) {
+
+      // Suporte para array direto (n8n compatible) ou objeto padrão
+      if (Array.isArray(response.data)) {
+        setCampanhas(response.data);
+      } else if (response.data.success) {
         setCampanhas(response.data.campanhas || []);
       }
     } catch (error) {
