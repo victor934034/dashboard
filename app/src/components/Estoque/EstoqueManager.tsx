@@ -210,28 +210,9 @@ export default function EstoqueManager() {
 
   if (!isConnected) {
     return (
-      <div className="p-6 max-w-2xl mx-auto">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <LinkIcon className="w-5 h-5" />
-              Conectar Planilha do Google Sheets
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-muted-foreground">
-              Informe a URL da planilha do Google Sheets para gerenciar seu estoque:
-            </p>
-            <Input
-              placeholder="https://docs.google.com/spreadsheets/d/..."
-              value={spreadsheetUrl}
-              onChange={(e) => setSpreadsheetUrl(e.target.value)}
-            />
-            <Button onClick={connectSpreadsheet} disabled={loading} className="w-full">
-              {loading ? 'Conectando...' : 'Conectar Planilha'}
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="flex flex-col items-center justify-center p-12 text-muted-foreground">
+        <Loader2 className="w-8 h-8 animate-spin mb-4 text-primary" />
+        <p>Conectando ao banco de dados de estoque...</p>
       </div>
     );
   }
