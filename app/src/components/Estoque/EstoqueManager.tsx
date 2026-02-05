@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Table, AlertTriangle, Plus, Trash2, Loader2, RefreshCcw, Package, Tag, Hash, ShieldAlert } from 'lucide-react';
+import { Table, AlertTriangle, Plus, Trash2, Loader2, RefreshCcw, Package, Tag, Hash, ShieldAlert, Image as ImageIcon, Wallet, Info, Search } from 'lucide-react';
 import { stockApi } from '@/services/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,21 +15,31 @@ interface Product {
   quantity: number;
   minimum_stock: number;
   category: string;
+  price?: string;
+  brand?: string;
+  color?: string;
+  image?: string;
 }
 
 export default function EstoqueManager() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [lowStockProducts, setLowStockProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const [newProduct, setNewProduct] = useState({
     name: '',
     quantity: 0,
     minimum_stock: 0,
-    category: 'Geral'
+    category: 'Geral',
+    price: '0,00',
+    brand: '',
+    color: '',
+    image: ''
   });
 
   const loadData = useCallback(async (silent = false) => {
@@ -39,16 +49,18 @@ export default function EstoqueManager() {
 
       const response = await stockApi.getProducts();
       if (response.data.success) {
-        setProducts(response.data.products || []);
+        const allProducts = response.data.products || [];
+        setProducts(allProducts);
+        setFilteredProducts(allProducts);
 
-        // Calcular estoque baixo localmente ou via API
-        const low = (response.data.products || []).filter(
-          (p: Product) => p.quantity < p.minimum_stock
+        // Calcular estoque baixo
+        const low = allProducts.filter(
+          (p: Product) => p.quantity < p.minimum_stock && p.minimum_stock > 0
         );
         setLowStockProducts(low);
       }
     } catch (error) {
-      if (!silent) toast.error('Erro ao carregar estoque');
+      if (!silent) toast.error('Erro ao carregar estoque do Supabase');
     } finally {
       setLoading(false);
       setIsRefreshing(false);
@@ -59,6 +71,18 @@ export default function EstoqueManager() {
     loadData();
   }, [loadData]);
 
+  // Filtro de Busca
+  useEffect(() => {
+    const term = searchTerm.toLowerCase();
+    setFilteredProducts(
+      products.filter(p =>
+        p.name.toLowerCase().includes(term) ||
+        p.category.toLowerCase().includes(term) ||
+        (p.brand && p.brand.toLowerCase().includes(term))
+      )
+    );
+  }, [searchTerm, products]);
+
   const handleUpdateQuantity = async (id: string | number, newQty: string) => {
     const qty = parseInt(newQty);
     if (isNaN(qty)) return;
@@ -66,12 +90,7 @@ export default function EstoqueManager() {
     try {
       await stockApi.updateQuantity(id, qty);
       setProducts(prev => prev.map(p => p.id === id ? { ...p, quantity: qty } : p));
-
-      // Atualizar alertas
-      const updatedProducts = products.map(p => p.id === id ? { ...p, quantity: qty } : p);
-      setLowStockProducts(updatedProducts.filter(p => p.quantity < p.minimum_stock));
-
-      toast.success('Quantidade atualizada');
+      toast.success('Estoque atualizado');
     } catch (error) {
       toast.error('Erro ao atualizar quantidade');
     }
@@ -87,27 +106,26 @@ export default function EstoqueManager() {
       setIsAdding(true);
       const response = await stockApi.addProduct(newProduct);
       if (response.data.success) {
-        toast.success('Produto adicionado ao estoque');
+        toast.success('Produto cadastrado com sucesso');
         setIsDialogOpen(false);
-        setNewProduct({ name: '', quantity: 0, minimum_stock: 0, category: 'Geral' });
+        setNewProduct({ name: '', quantity: 0, minimum_stock: 0, category: 'Geral', price: '0,00', brand: '', color: '', image: '' });
         loadData(true);
       }
     } catch (error) {
-      toast.error('Erro ao adicionar produto');
+      toast.error('Erro ao cadastrar produto');
     } finally {
       setIsAdding(false);
     }
   };
 
   const handleDeleteProduct = async (id: string | number) => {
-    if (!confirm('Tem certeza que deseja excluir este produto do estoque?')) return;
+    if (!confirm('Deseja realmente remover este item do estoque?')) return;
 
     try {
       const response = await stockApi.deleteProduct(id);
       if (response.data.success) {
         toast.success('Produto removido');
         setProducts(prev => prev.filter(p => p.id !== id));
-        setLowStockProducts(prev => prev.filter(p => p.id !== id));
       }
     } catch (error) {
       toast.error('Erro ao remover produto');
@@ -115,21 +133,21 @@ export default function EstoqueManager() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Alertas de Estoque Baixo */}
+    <div className="p-6 space-y-6 max-w-[1400px] mx-auto">
+      {/* Alertas Críticos */}
       {lowStockProducts.length > 0 && (
-        <Card className="border-destructive bg-destructive/5">
+        <Card className="border-destructive bg-destructive/5 animate-in fade-in slide-in-from-top duration-500">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-destructive text-lg font-bold">
-              <ShieldAlert className="w-5 h-5" />
-              Alerta de Reposição ({lowStockProducts.length})
+              <ShieldAlert className="w-5 h-5 font-bold" />
+              Reposição Necessária ({lowStockProducts.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
               {lowStockProducts.map((item) => (
-                <Badge key={item.id} variant="outline" className="bg-white text-destructive border-destructive">
-                  {item.name}: {item.quantity} (mín: {item.minimum_stock})
+                <Badge key={item.id} variant="outline" className="bg-white text-destructive border-destructive shadow-sm">
+                  {item.name}: {item.quantity} un (mín: {item.minimum_stock})
                 </Badge>
               ))}
             </div>
@@ -137,80 +155,128 @@ export default function EstoqueManager() {
         </Card>
       )}
 
-      {/* Cabeçalho e Ações */}
+      {/* Header & Dashboard Stats */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Package className="w-6 h-6 text-primary" />
-            Gestão de Estoque
+          <h1 className="text-3xl font-extrabold flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <Package className="w-7 h-7 text-primary" />
+            </div>
+            Gestão de Inventário
           </h1>
-          <p className="text-sm text-muted-foreground">Controle seus produtos e níveis de estoque em tempo real (Supabase)</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Visualizando dados da tabela <code className="bg-muted px-1 rounded text-primary">estoque</code> no Supabase
+          </p>
         </div>
 
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => loadData()} disabled={isRefreshing || loading}>
+        <div className="flex items-center gap-3">
+          <div className="relative w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por nome, categoria..."
+              className="pl-9 h-10"
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          <Button variant="outline" className="h-10" onClick={() => loadData()} disabled={isRefreshing || loading}>
             <RefreshCcw className={`w-4 h-4 mr-2 ${isRefreshing || loading ? 'animate-spin' : ''}`} />
-            {isRefreshing ? 'Atualizando...' : 'Sincronizar'}
+            Sincronizar
           </Button>
 
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-primary hover:bg-primary/90">
+              <Button className="h-10 bg-primary hover:bg-primary/90 shadow-md transition-all active:scale-95">
                 <Plus className="w-4 h-4 mr-2" />
-                Novo Produto
+                Novo Item
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-xl">
               <DialogHeader>
-                <DialogTitle>Adicionar ao Estoque</DialogTitle>
+                <DialogTitle className="text-xl">Novo Produto no Estoque</DialogTitle>
               </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium flex items-center gap-2">
-                    <Tag className="w-4 h-4 text-muted-foreground" /> Nome do Produto
+              <div className="grid grid-cols-2 gap-4 py-4">
+                <div className="col-span-2 space-y-2">
+                  <label className="text-sm font-semibold flex items-center gap-2 border-b pb-1">
+                    <Info className="w-4 h-4 text-primary" /> Informações Básicas
                   </label>
                   <Input
-                    placeholder="Ex: Camiseta Branca G"
+                    placeholder="Nome completo do produto"
                     value={newProduct.name}
                     onChange={e => setNewProduct({ ...newProduct, name: e.target.value })}
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium flex items-center gap-2">
-                      <Hash className="w-4 h-4 text-muted-foreground" /> Quantidade
-                    </label>
-                    <Input
-                      type="number"
-                      value={newProduct.quantity}
-                      onChange={e => setNewProduct({ ...newProduct, quantity: parseInt(e.target.value) || 0 })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium flex items-center gap-2">
-                      <AlertTriangle className="w-4 h-4 text-muted-foreground" /> Estoque Mínimo
-                    </label>
-                    <Input
-                      type="number"
-                      value={newProduct.minimum_stock}
-                      onChange={e => setNewProduct({ ...newProduct, minimum_stock: parseInt(e.target.value) || 0 })}
-                    />
-                  </div>
-                </div>
+
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Categoria</label>
                   <Input
-                    placeholder="Ex: Vestuário"
+                    placeholder="Ex: Painel Ripado"
                     value={newProduct.category}
                     onChange={e => setNewProduct({ ...newProduct, category: e.target.value })}
                   />
                 </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Marca</label>
+                  <Input
+                    placeholder="Marca do produto"
+                    value={newProduct.brand}
+                    onChange={e => setNewProduct({ ...newProduct, brand: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium flex items-center gap-2">
+                    <Wallet className="w-4 h-4 text-muted-foreground" /> Preço (R$)
+                  </label>
+                  <Input
+                    placeholder="67,90"
+                    value={newProduct.price}
+                    onChange={e => setNewProduct({ ...newProduct, price: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Cor</label>
+                  <Input
+                    placeholder="Ex: PRETO"
+                    value={newProduct.color}
+                    onChange={e => setNewProduct({ ...newProduct, color: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Qtd Inicial</label>
+                  <Input
+                    type="number"
+                    value={newProduct.quantity}
+                    onChange={e => setNewProduct({ ...newProduct, quantity: parseInt(e.target.value) || 0 })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-destructive">Estoque de Alerta</label>
+                  <Input
+                    type="number"
+                    value={newProduct.minimum_stock}
+                    onChange={e => setNewProduct({ ...newProduct, minimum_stock: parseInt(e.target.value) || 0 })}
+                  />
+                </div>
+
+                <div className="col-span-2 space-y-2">
+                  <label className="text-sm font-medium flex items-center gap-2">
+                    <ImageIcon className="w-4 h-4 text-muted-foreground" /> URL da Imagem
+                  </label>
+                  <Input
+                    placeholder="https://..."
+                    value={newProduct.image}
+                    onChange={e => setNewProduct({ ...newProduct, image: e.target.value })}
+                  />
+                </div>
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancelar</Button>
-                <Button onClick={handleAddProduct} disabled={isAdding}>
+                <Button variant="ghost" onClick={() => setIsDialogOpen(false)}>Cancelar</Button>
+                <Button onClick={handleAddProduct} disabled={isAdding} className="px-8">
                   {isAdding ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
-                  Salvar Produto
+                  Confirmar Cadastro
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -218,57 +284,89 @@ export default function EstoqueManager() {
         </div>
       </div>
 
-      {/* Tabela de Produtos */}
-      <Card className="shadow-sm border-muted">
+      {/* Main Table Card */}
+      <Card className="shadow-lg border-muted/60 overflow-hidden">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <UITable>
-              <TableHeader className="bg-muted/50">
-                <TableRow>
-                  <TableHead className="w-[40%]">Produto</TableHead>
-                  <TableHead>Categoria</TableHead>
-                  <TableHead className="text-center">Quantidade</TableHead>
-                  <TableHead className="text-center">Mínimo</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
+              <TableHeader className="bg-muted/40 h-14">
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="w-[80px] text-center">Foto</TableHead>
+                  <TableHead className="min-w-[200px]">Produto</TableHead>
+                  <TableHead>Detalhes</TableHead>
+                  <TableHead className="text-center">Preço</TableHead>
+                  <TableHead className="text-center w-[120px]">Qtd. Atual</TableHead>
+                  <TableHead className="text-right pr-6">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading && products.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="h-32 text-center">
-                      <div className="flex flex-col items-center justify-center gap-2">
-                        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                        <span className="text-sm text-muted-foreground font-medium">Carregando estoque...</span>
+                    <TableCell colSpan={6} className="h-64 text-center">
+                      <div className="flex flex-col items-center justify-center gap-3">
+                        <div className="relative">
+                          <Loader2 className="w-12 h-12 animate-spin text-primary opacity-20" />
+                          <Package className="w-6 h-6 text-primary absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                        </div>
+                        <p className="text-sm font-semibold text-muted-foreground animate-pulse">Sincronizando com Supabase...</p>
                       </div>
                     </TableCell>
                   </TableRow>
-                ) : products.length === 0 ? (
+                ) : filteredProducts.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="h-32 text-center text-muted-foreground">
-                      Nenhum produto cadastrado no Supabase.
+                    <TableCell colSpan={6} className="h-64 text-center text-muted-foreground bg-muted/5">
+                      <div className="flex flex-col items-center justify-center gap-2 opacity-50">
+                        <Search className="w-12 h-12 mb-2" />
+                        <p className="font-medium text-lg">Nenhum produto encontrado</p>
+                        <p className="text-sm">Tente ajustar sua busca ou cadastrar um novo item.</p>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ) : (
-                  products.map((product) => (
-                    <TableRow key={product.id} className="hover:bg-muted/30 transition-colors">
-                      <TableCell className="font-medium">{product.name}</TableCell>
-                      <TableCell><Badge variant="outline">{product.category}</Badge></TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          <Input
-                            type="number"
-                            value={product.quantity}
-                            onChange={(e) => handleUpdateQuantity(product.id, e.target.value)}
-                            className={`w-20 h-8 text-center ${product.quantity < product.minimum_stock ? 'border-destructive text-destructive font-bold' : ''}`}
-                          />
+                  filteredProducts.map((product) => (
+                    <TableRow key={product.id} className="hover:bg-muted/20 transition-all group">
+                      <TableCell>
+                        <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center overflow-hidden border border-muted-foreground/10">
+                          {product.image ? (
+                            <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <ImageIcon className="w-5 h-5 text-muted-foreground/40" />
+                          )}
                         </div>
                       </TableCell>
-                      <TableCell className="text-center text-muted-foreground">{product.minimum_stock}</TableCell>
-                      <TableCell className="text-right">
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="font-bold text-base leading-tight group-hover:text-primary transition-colors">{product.name}</span>
+                          <span className="text-xs text-muted-foreground mt-0.5 uppercase font-medium">{product.category}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {product.brand && <Badge variant="secondary" className="px-1.5 py-0 text-[10px]">{product.brand}</Badge>}
+                          {product.color && <Badge variant="outline" className="px-1.5 py-0 text-[10px] border-muted-foreground/20">{product.color}</Badge>}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <span className="font-mono font-bold text-green-600">R$ {product.price || '---'}</span>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Input
+                          type="number"
+                          value={product.quantity}
+                          onChange={(e) => handleUpdateQuantity(product.id, e.target.value)}
+                          className={`w-20 mx-auto text-center font-bold h-9 bg-white transition-all ${product.quantity < product.minimum_stock && product.minimum_stock > 0 ? 'border-destructive text-destructive bg-destructive/5' : 'focus:border-primary'}`}
+                        />
+                        {product.minimum_stock > 0 && (
+                          <div className="text-[10px] text-muted-foreground mt-1">
+                            Min: {product.minimum_stock}
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right pr-6">
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                          className="opacity-0 group-hover:opacity-100 transition-all text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                           onClick={() => handleDeleteProduct(product.id)}
                         >
                           <Trash2 className="w-4 h-4" />

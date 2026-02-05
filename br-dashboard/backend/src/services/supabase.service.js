@@ -17,12 +17,26 @@ class SupabaseService {
     async getProducts() {
         try {
             const { data, error } = await this.supabase
-                .from('products')
+                .from('estoque')
                 .select('*')
-                .order('name', { ascending: true });
+                .order('nome', { ascending: true });
 
             if (error) throw error;
-            return { success: true, products: data };
+
+            // Map to the format the frontend expects
+            const products = data.map(item => ({
+                id: item.id,
+                name: item.nome,
+                quantity: parseInt(item.estoque) || 0,
+                minimum_stock: parseInt(item.estoque_minimo) || 0,
+                category: item.categoria_nivel_1 || 'Geral',
+                price: item.preco,
+                brand: item.marca,
+                color: item.cor,
+                image: item.imagem
+            }));
+
+            return { success: true, products };
         } catch (error) {
             console.error('❌ Erro ao buscar produtos no Supabase:', error.message);
             return { success: false, error: error.message };
@@ -32,12 +46,22 @@ class SupabaseService {
     async getLowStock() {
         try {
             const { data, error } = await this.supabase
-                .from('products')
-                .select('*')
-                .filter('quantity', 'lt', 'minimum_stock');
+                .from('estoque')
+                .select('*');
 
             if (error) throw error;
-            return { success: true, products: data };
+
+            const lowStock = data
+                .map(item => ({
+                    id: item.id,
+                    name: item.nome,
+                    quantity: parseInt(item.estoque) || 0,
+                    minimum_stock: parseInt(item.estoque_minimo) || 0,
+                    category: item.categoria_nivel_1 || 'Geral'
+                }))
+                .filter(item => item.quantity < item.minimum_stock);
+
+            return { success: true, products: lowStock };
         } catch (error) {
             console.error('❌ Erro ao buscar estoque baixo no Supabase:', error.message);
             return { success: false, error: error.message };
@@ -47,8 +71,8 @@ class SupabaseService {
     async updateQuantity(id, quantity) {
         try {
             const { data, error } = await this.supabase
-                .from('products')
-                .update({ quantity: parseInt(quantity) })
+                .from('estoque')
+                .update({ estoque: parseInt(quantity) })
                 .eq('id', id)
                 .select();
 
@@ -63,12 +87,16 @@ class SupabaseService {
     async addProduct(productData) {
         try {
             const { data, error } = await this.supabase
-                .from('products')
+                .from('estoque')
                 .insert([{
-                    name: productData.name,
-                    quantity: parseInt(productData.quantity) || 0,
-                    minimum_stock: parseInt(productData.minimum_stock) || 0,
-                    category: productData.category || 'Geral'
+                    nome: productData.name,
+                    estoque: parseInt(productData.quantity) || 0,
+                    estoque_minimo: parseInt(productData.minimum_stock) || 0,
+                    categoria_nivel_1: productData.category || 'Geral',
+                    preco: productData.price || '0,00',
+                    marca: productData.brand || null,
+                    cor: productData.color || null,
+                    imagem: productData.image || null
                 }])
                 .select();
 
@@ -83,7 +111,7 @@ class SupabaseService {
     async deleteProduct(id) {
         try {
             const { error } = await this.supabase
-                .from('products')
+                .from('estoque')
                 .delete()
                 .eq('id', id);
 
@@ -98,13 +126,14 @@ class SupabaseService {
     async updateProduct(id, productData) {
         try {
             const updatePayload = {};
-            if (productData.name !== undefined) updatePayload.name = productData.name;
-            if (productData.quantity !== undefined) updatePayload.quantity = parseInt(productData.quantity);
-            if (productData.minimum_stock !== undefined) updatePayload.minimum_stock = parseInt(productData.minimum_stock);
-            if (productData.category !== undefined) updatePayload.category = productData.category;
+            if (productData.name !== undefined) updatePayload.nome = productData.name;
+            if (productData.quantity !== undefined) updatePayload.estoque = parseInt(productData.quantity);
+            if (productData.minimum_stock !== undefined) updatePayload.estoque_minimo = parseInt(productData.minimum_stock);
+            if (productData.category !== undefined) updatePayload.categoria_nivel_1 = productData.category;
+            if (productData.price !== undefined) updatePayload.preco = productData.price;
 
             const { data, error } = await this.supabase
-                .from('products')
+                .from('estoque')
                 .update(updatePayload)
                 .eq('id', id)
                 .select();
