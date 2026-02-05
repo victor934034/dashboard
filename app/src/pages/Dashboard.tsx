@@ -34,7 +34,7 @@ export default function Dashboard() {
 
       const [pedidosRes, estoqueRes, crmRes, campanhasRes] = await Promise.all([
         pedidosApi.getStats(),
-        sheetsApi.getLowStock('user-1'),
+        stockApi.getLowStock(),
         crmApi.getLeads(),
         campanhasApi.getAll()
       ]);
