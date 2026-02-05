@@ -107,4 +107,40 @@ router.post('/chamar-atendente', async (req, res) => {
   }
 });
 
+
+// WEBHOOK: RECEBER NOVO LEAD DO AGENTE
+router.post('/crm/lead', async (req, res) => {
+  try {
+    console.log('👤 Novo lead recebido para o CRM:', req.body);
+    const baserowService = require('../services/baserow.service');
+
+    const { nome, telefone, email, notas, origem } = req.body;
+
+    const result = await baserowService.createLead({
+      nome,
+      telefone,
+      email,
+      status: 'novo',
+      origem: origem || 'Agente AI',
+      notas: notas || 'Lead capturado automaticamente pelo agente'
+    });
+
+    if (result.success) {
+      if (global.io) {
+        global.io.emit('notification', {
+          type: 'novo-lead',
+          title: '👤 Novo Lead no CRM',
+          message: `${nome || 'Alguém'} acabou de ser adicionado!`
+        });
+      }
+      res.json({ success: true, lead: result.lead });
+    } else {
+      res.status(500).json({ success: false, error: result.error });
+    }
+  } catch (error) {
+    console.error('Erro ao processar lead do agente:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 module.exports = router;

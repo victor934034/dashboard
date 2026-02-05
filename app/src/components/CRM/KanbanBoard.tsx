@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Kanban, Plus, User, Phone, Mail, MoreHorizontal } from 'lucide-react';
+import { Kanban, Plus, User, Phone, Mail, MoreHorizontal, RefreshCw } from 'lucide-react';
 import { crmApi } from '@/services/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -69,7 +69,9 @@ export default function KanbanBoard() {
 
   const updateLeadStatus = async (leadId: string | number, newStatus: string) => {
     try {
-      await crmApi.updateLead(String(leadId), { status: newStatus });
+      // Formatar status para o Baserow (Primeira Letra Maiúscula)
+      const formattedStatus = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
+      await crmApi.updateLead(String(leadId), { status: formattedStatus });
       toast.success('Status atualizado!');
       loadLeads();
     } catch (error) {
@@ -81,8 +83,6 @@ export default function KanbanBoard() {
     return leads.filter(lead => lead.status === status);
   };
 
-
-
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
@@ -90,68 +90,73 @@ export default function KanbanBoard() {
           <Kanban className="w-6 h-6" />
           CRM - Pipeline de Vendas
         </h1>
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Novo Lead
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Adicionar Novo Lead</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium">Nome *</label>
-                <Input
-                  value={newLead.nome}
-                  onChange={(e) => setNewLead({ ...newLead, nome: e.target.value })}
-                  placeholder="Nome do lead"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium">Email</label>
-                <Input
-                  type="email"
-                  value={newLead.email}
-                  onChange={(e) => setNewLead({ ...newLead, email: e.target.value })}
-                  placeholder="email@exemplo.com"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium">Telefone</label>
-                <Input
-                  value={newLead.telefone}
-                  onChange={(e) => setNewLead({ ...newLead, telefone: e.target.value })}
-                  placeholder="(00) 00000-0000"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium">Origem</label>
-                <Input
-                  value={newLead.origem}
-                  onChange={(e) => setNewLead({ ...newLead, origem: e.target.value })}
-                  placeholder="WhatsApp, Site, Indicação..."
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium">Notas</label>
-                <Input
-                  value={newLead.notas}
-                  onChange={(e) => setNewLead({ ...newLead, notas: e.target.value })}
-                  placeholder="Observações..."
-                />
-              </div>
-              <Button onClick={createLead} className="w-full">
-                Criar Lead
+        <div className="flex gap-2">
+          <Button variant="outline" size="icon" onClick={loadLeads} disabled={loading}>
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          </Button>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="w-4 h-4 mr-2" />
+                Novo Lead
               </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Adicionar Novo Lead</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium">Nome *</label>
+                  <Input
+                    value={newLead.nome}
+                    onChange={(e) => setNewLead({ ...newLead, nome: e.target.value })}
+                    placeholder="Nome do lead"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Email</label>
+                  <Input
+                    type="email"
+                    value={newLead.email}
+                    onChange={(e) => setNewLead({ ...newLead, email: e.target.value })}
+                    placeholder="email@exemplo.com"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Telefone</label>
+                  <Input
+                    value={newLead.telefone}
+                    onChange={(e) => setNewLead({ ...newLead, telefone: e.target.value })}
+                    placeholder="(00) 00000-0000"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Origem</label>
+                  <Input
+                    value={newLead.origem}
+                    onChange={(e) => setNewLead({ ...newLead, origem: e.target.value })}
+                    placeholder="WhatsApp, Site, Indicação..."
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Notas</label>
+                  <Input
+                    value={newLead.notas}
+                    onChange={(e) => setNewLead({ ...newLead, notas: e.target.value })}
+                    placeholder="Observações..."
+                  />
+                </div>
+                <Button onClick={createLead} className="w-full">
+                  Criar Lead
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
-      {loading ? (
+      {loading && leads.length === 0 ? (
         <div className="text-center py-10">Carregando...</div>
       ) : (
         <div className="flex gap-4 overflow-x-auto pb-4">
@@ -169,7 +174,7 @@ export default function KanbanBoard() {
                     </Badge>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-3">
+                <CardContent className="space-y-3 min-h-[200px]">
                   {getLeadsByStatus(column.id).map(lead => (
                     <Card key={lead.id} className="cursor-pointer hover:shadow-md transition-shadow">
                       <CardContent className="p-4">
@@ -228,6 +233,15 @@ export default function KanbanBoard() {
                                       ))}
                                     </SelectContent>
                                   </Select>
+                                </div>
+                                {lead.notas && (
+                                  <div>
+                                    <label className="text-sm font-medium">Notas</label>
+                                    <p className="text-sm text-muted-foreground">{lead.notas}</p>
+                                  </div>
+                                )}
+                                <div className="text-xs text-muted-foreground">
+                                  Cadastrado em: {new Date(lead.data).toLocaleString()}
                                 </div>
                               </div>
                             </DialogContent>

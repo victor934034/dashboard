@@ -54,13 +54,13 @@ class BaserowService {
       // Mapear campos do Baserow para o formato esperado pelo Frontend
       const leads = results.map(row => ({
         id: row.id,
-        nome: row.nome || row.Nome || row.Pushname || "Lead s/ Nome",
-        telefone: row.telefone || row.Telefone || row.ID || "",
-        email: row.email || row.Email || "",
-        status: (row.status || row.Status || "novo").toLowerCase(),
-        origem: row.origem || row.Origem || "WhatsApp",
-        notas: row.notas || row.Notas || row['nova info para guardar'] || "",
-        data: row['data_cadastrado'] || row['Created on'] || new Date().toISOString()
+        nome: row.Nome || row.nome || row.Pushname || "Lead s/ Nome",
+        telefone: row.Telefone || row.telefone || row.ID || "",
+        email: row.Email || row.email || "",
+        status: (row.Status?.value || row.status?.value || row.Status || row.status || "novo").toLowerCase(),
+        origem: row.Origem || row.origem || "WhatsApp",
+        notas: row.Notas || row.notas || row['nova info para guardar'] || "",
+        data: row['Data Cadastrado'] || row['data_cadastrado'] || row['Created on'] || new Date().toISOString()
       }));
 
       return {
@@ -80,10 +80,21 @@ class BaserowService {
         return { success: false, error: 'BASEROW_TABLE_ID não configurado' };
       }
 
+      // Mapear campos do Frontend para o Baserow
+      const baserowData = {
+        'Nome': leadData.nome || 'Lead s/ Nome',
+        'Telefone': leadData.telefone || '',
+        'Email': leadData.email || '',
+        'Status': leadData.status ? leadData.status.charAt(0).toUpperCase() + leadData.status.slice(1) : 'Novo',
+        'Origem': leadData.origem || 'Dashboard',
+        'Notas': leadData.notas || '',
+        'Data Cadastrado': new Date().toISOString()
+      };
+
       const headers = await this.getHeaders();
       const response = await axios.post(
         `${this.apiUrl}/api/database/rows/table/${tableId}/?user_field_names=true`,
-        leadData,
+        baserowData,
         { headers }
       );
 
@@ -104,10 +115,21 @@ class BaserowService {
         return { success: false, error: 'BASEROW_TABLE_ID não configurado' };
       }
 
+      // Mapear campos do Frontend para o Baserow
+      const baserowData = {};
+      if (leadData.nome !== undefined) baserowData['Nome'] = leadData.nome;
+      if (leadData.telefone !== undefined) baserowData['Telefone'] = leadData.telefone;
+      if (leadData.email !== undefined) baserowData['Email'] = leadData.email;
+      if (leadData.status !== undefined) {
+        baserowData['Status'] = leadData.status.charAt(0).toUpperCase() + leadData.status.slice(1);
+      }
+      if (leadData.origem !== undefined) baserowData['Origem'] = leadData.origem;
+      if (leadData.notas !== undefined) baserowData['Notas'] = leadData.notas;
+
       const headers = await this.getHeaders();
       const response = await axios.patch(
         `${this.apiUrl}/api/database/rows/table/${tableId}/${leadId}/?user_field_names=true`,
-        leadData,
+        baserowData,
         { headers }
       );
 
