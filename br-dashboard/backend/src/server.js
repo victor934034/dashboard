@@ -13,6 +13,7 @@ const crmRoutes = require('./routes/crm.routes');
 const pedidosRoutes = require('./routes/pedidos.routes');
 const campanhasRoutes = require('./routes/campanhas.routes');
 const webhooksRoutes = require('./routes/webhooks.routes');
+const stockRoutes = require('./routes/stock.routes');
 
 // Importar serviços
 const googleSheetsService = require('./services/googleSheets.service');
@@ -49,6 +50,7 @@ app.use('/api/sheets', sheetsRoutes);
 app.use('/api/crm', crmRoutes);
 app.use('/api/pedidos', pedidosRoutes);
 app.use('/api/campanhas', campanhasRoutes);
+app.use('/api/stock', stockRoutes);
 app.use('/webhook', webhooksRoutes);
 
 // Redirecionar raiz para o frontend

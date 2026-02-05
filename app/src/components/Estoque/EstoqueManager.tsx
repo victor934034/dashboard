@@ -1,221 +1,135 @@
-import { useState, useEffect, useCallback, memo } from 'react';
-import { Table, AlertTriangle, Plus, Trash2, Save, Loader2, RefreshCcw } from 'lucide-react';
-import { sheetsApi } from '@/services/api';
+import { useState, useEffect, useCallback } from 'react';
+import { Table, AlertTriangle, Plus, Trash2, Loader2, RefreshCcw, Package, Tag, Hash, ShieldAlert } from 'lucide-react';
+import { stockApi } from '@/services/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table as UITable, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import type { EstoqueItem } from '@/types';
 
-// Componente de Linha Memoizado para performance máxima
-const EstoqueRow = memo(({
-  row,
-  rowIdx,
-  handleCellChange,
-  syncCell,
-  deleteRow
-}: {
-  row: string[],
-  rowIdx: number,
-  handleCellChange: (rowIndex: number, colIndex: number, value: string) => void,
-  syncCell: (rowIndex: number, colIndex: number, value: string) => Promise<void>,
-  deleteRow: (rowIndex: number) => Promise<void>
-}) => {
-  return (
-    <TableRow>
-      {row.map((cell, colIdx) => (
-        <TableCell key={colIdx}>
-          <Input
-            value={cell || ''}
-            onChange={(e) => handleCellChange(rowIdx, colIdx, e.target.value)}
-            onBlur={(e) => syncCell(rowIdx, colIdx, e.target.value)}
-            className="min-w-[100px] focus:bg-accent focus:ring-1 transition-colors"
-          />
-        </TableCell>
-      ))}
-      <TableCell>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-destructive hover:bg-destructive/10"
-          onClick={() => deleteRow(rowIdx)}
-        >
-          <Trash2 className="w-4 h-4" />
-        </Button>
-      </TableCell>
-    </TableRow>
-  );
-});
-
-EstoqueRow.displayName = 'EstoqueRow';
+interface Product {
+  id: string | number;
+  name: string;
+  quantity: number;
+  minimum_stock: number;
+  category: string;
+}
 
 export default function EstoqueManager() {
-  // const [spreadsheetUrl, setSpreadsheetUrl] = useState(''); // Removed unused state
-  const [isConnected, setIsConnected] = useState(false);
-  const [data, setData] = useState<string[][]>([]);
-  const [headers, setHeaders] = useState<string[]>([]);
-  const [lowStock, setLowStock] = useState<EstoqueItem[]>([]);
-  // const [loading, setLoading] = useState(false); // Removed unused state
+  const [products, setProducts] = useState<Product[]>([]);
+  const [lowStockProducts, setLowStockProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [userId] = useState('user-1');
+  const [isAdding, setIsAdding] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  // Confinguração Hardcoded para estabilidade
-  const HARDCODED_URL = 'https://docs.google.com/spreadsheets/d/1aZG7JO1McXNI1NQck_Q7ZvsVIQyofARObMbVPYIVIaA/edit';
-  const SHEET_NAME = 'Relatório de Produtos';
-  const SHEET_ID = 757360320; // GID
-
-  const [newRow, setNewRow] = useState<string[]>([]);
-
-  const loadLowStock = useCallback(async () => {
-    try {
-      const response = await sheetsApi.getLowStock(userId);
-      setLowStock(response.data.products || []);
-    } catch (error) {
-      console.error('Erro ao carregar estoque baixo:', error);
-    }
-  }, [userId]);
+  const [newProduct, setNewProduct] = useState({
+    name: '',
+    quantity: 0,
+    minimum_stock: 0,
+    category: 'Geral'
+  });
 
   const loadData = useCallback(async (silent = false) => {
     try {
-      if (!silent && data.length === 0) { /* removed setLoading */ }
+      if (!silent) setLoading(true);
       else setIsRefreshing(true);
 
-      const response = await sheetsApi.read(userId, undefined, SHEET_NAME);
-      const values = response.data.data || [];
+      const response = await stockApi.getProducts();
+      if (response.data.success) {
+        setProducts(response.data.products || []);
 
-      if (values.length > 0) {
-        setHeaders(values[0]);
-        setData(values.slice(1));
-        setNewRow(new Array(values[0].length).fill(''));
+        // Calcular estoque baixo localmente ou via API
+        const low = (response.data.products || []).filter(
+          (p: Product) => p.quantity < p.minimum_stock
+        );
+        setLowStockProducts(low);
       }
     } catch (error) {
-      if (!silent) toast.error('Erro ao carregar dados');
+      if (!silent) toast.error('Erro ao carregar estoque');
     } finally {
-      // setLoading(false);
+      setLoading(false);
       setIsRefreshing(false);
     }
-  }, [userId, data.length]);
-
-  const checkConnection = useCallback(async () => {
-    try {
-      const response = await sheetsApi.getStatus(userId);
-
-      if (response.data.connected) {
-        setIsConnected(true);
-        loadData();
-        loadLowStock();
-      } else {
-        // Auto-connect silencioso
-        console.log('Auto-connecting to hardcoded sheet...');
-        await sheetsApi.connect(userId, HARDCODED_URL);
-        setIsConnected(true);
-        loadData();
-        loadLowStock();
-      }
-    } catch (error) {
-      console.error('Erro ao verificar/conectar:', error);
-      // Tentar conectar mesmo assim em caso de erro de status
-      try {
-        await sheetsApi.connect(userId, HARDCODED_URL);
-        setIsConnected(true);
-        loadData();
-        loadLowStock();
-      } catch (e) {
-        console.error('Falha fatal na autoconexão', e);
-      }
-    }
-  }, [userId, loadData, loadLowStock]);
-
-  useEffect(() => {
-    checkConnection();
-  }, [checkConnection]);
-
-  // connectSpreadsheet removed
-
-  const handleCellChange = useCallback((rowIndex: number, colIndex: number, value: string) => {
-    setData(prev => {
-      const newData = [...prev];
-      if (newData[rowIndex]) {
-        newData[rowIndex] = [...newData[rowIndex]];
-        newData[rowIndex][colIndex] = value;
-      }
-      return newData;
-    });
   }, []);
 
-  const syncCell = useCallback(async (rowIndex: number, colIndex: number, value: string) => {
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const handleUpdateQuantity = async (id: string | number, newQty: string) => {
+    const qty = parseInt(newQty);
+    if (isNaN(qty)) return;
+
     try {
-      const cellRef = `${String.fromCharCode(65 + colIndex)}${rowIndex + 2}`;
-      await sheetsApi.updateCell(userId, cellRef, value, SHEET_NAME);
-      loadLowStock();
+      await stockApi.updateQuantity(id, qty);
+      setProducts(prev => prev.map(p => p.id === id ? { ...p, quantity: qty } : p));
+
+      // Atualizar alertas
+      const updatedProducts = products.map(p => p.id === id ? { ...p, quantity: qty } : p);
+      setLowStockProducts(updatedProducts.filter(p => p.quantity < p.minimum_stock));
+
+      toast.success('Quantidade atualizada');
     } catch (error) {
-      toast.error('Erro ao sincronizar célula. Revertendo...');
-      loadData(true);
+      toast.error('Erro ao atualizar quantidade');
     }
-  }, [userId, loadData, loadLowStock]);
+  };
 
-  const addRow = useCallback(async () => {
-    if (newRow.some(cell => cell.trim() !== '')) {
-      const rowToAdd = [...newRow];
-      try {
-        setData(prev => [...prev, rowToAdd]);
-        setNewRow(new Array(headers.length).fill(''));
+  const handleAddProduct = async () => {
+    if (!newProduct.name) {
+      toast.error('O nome do produto é obrigatório');
+      return;
+    }
 
-        await sheetsApi.addRow(userId, rowToAdd, SHEET_NAME);
-        toast.success('Produto adicionado');
-        loadData(true);
-      } catch (error) {
-        toast.error('Erro ao adicionar produto');
+    try {
+      setIsAdding(true);
+      const response = await stockApi.addProduct(newProduct);
+      if (response.data.success) {
+        toast.success('Produto adicionado ao estoque');
+        setIsDialogOpen(false);
+        setNewProduct({ name: '', quantity: 0, minimum_stock: 0, category: 'Geral' });
         loadData(true);
       }
+    } catch (error) {
+      toast.error('Erro ao adicionar produto');
+    } finally {
+      setIsAdding(false);
     }
-  }, [userId, newRow, headers.length, loadData]);
+  };
 
-  const deleteRow = useCallback(async (rowIndex: number) => {
-    let originalData: string[][] = [];
-    setData(prev => {
-      originalData = prev;
-      return prev.filter((_, i) => i !== rowIndex);
-    });
+  const handleDeleteProduct = async (id: string | number) => {
+    if (!confirm('Tem certeza que deseja excluir este produto do estoque?')) return;
 
     try {
-      await sheetsApi.deleteRow(userId, rowIndex + 1, SHEET_ID);
-      toast.success('Linha removida');
-      loadData(true);
+      const response = await stockApi.deleteProduct(id);
+      if (response.data.success) {
+        toast.success('Produto removido');
+        setProducts(prev => prev.filter(p => p.id !== id));
+        setLowStockProducts(prev => prev.filter(p => p.id !== id));
+      }
     } catch (error) {
-      toast.error('Erro ao remover linha');
-      setData(originalData);
+      toast.error('Erro ao remover produto');
     }
-  }, [userId, loadData]);
-
-  if (!isConnected) {
-    return (
-      <div className="flex flex-col items-center justify-center p-12 text-muted-foreground">
-        <Loader2 className="w-8 h-8 animate-spin mb-4 text-primary" />
-        <p>Conectando ao banco de dados de estoque...</p>
-      </div>
-    );
-  }
+  };
 
   return (
     <div className="p-6 space-y-6">
       {/* Alertas de Estoque Baixo */}
-      {lowStock.length > 0 && (
-        <Card className="border-destructive">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-destructive">
-              <AlertTriangle className="w-5 h-5" />
-              Alertas de Estoque Baixo ({lowStock.length} produtos)
+      {lowStockProducts.length > 0 && (
+        <Card className="border-destructive bg-destructive/5">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-destructive text-lg font-bold">
+              <ShieldAlert className="w-5 h-5" />
+              Alerta de Reposição ({lowStockProducts.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
-              {lowStock.map((item, idx) => (
-                <Badge key={idx} variant="destructive">
-                  {item.name}: {item.quantity} (mín: {item.minimum})
+              {lowStockProducts.map((item) => (
+                <Badge key={item.id} variant="outline" className="bg-white text-destructive border-destructive">
+                  {item.name}: {item.quantity} (mín: {item.minimum_stock})
                 </Badge>
               ))}
             </div>
@@ -223,78 +137,146 @@ export default function EstoqueManager() {
         </Card>
       )}
 
-      {/* Tabela de Estoque */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <Table className="w-5 h-5" />
-            Gerenciamento de Estoque
-          </CardTitle>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => loadData()} disabled={isRefreshing}>
-              {isRefreshing ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <RefreshCcw className="w-4 h-4 mr-2" />
-              )}
-              {isRefreshing ? 'Atualizando...' : 'Atualizar'}
-            </Button>
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Adicionar Produto
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Adicionar Novo Produto</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  {headers.map((header, idx) => (
-                    <div key={idx}>
-                      <label className="text-sm font-medium">{header}</label>
-                      <Input
-                        value={newRow[idx] || ''}
-                        onChange={(e) => {
-                          const updated = [...newRow];
-                          updated[idx] = e.target.value;
-                          setNewRow(updated);
-                        }}
-                      />
-                    </div>
-                  ))}
-                  <Button onClick={addRow} className="w-full">
-                    <Save className="w-4 h-4 mr-2" />
-                    Salvar
-                  </Button>
+      {/* Cabeçalho e Ações */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <Package className="w-6 h-6 text-primary" />
+            Gestão de Estoque
+          </h1>
+          <p className="text-sm text-muted-foreground">Controle seus produtos e níveis de estoque em tempo real (Supabase)</p>
+        </div>
+
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => loadData()} disabled={isRefreshing || loading}>
+            <RefreshCcw className={`w-4 h-4 mr-2 ${isRefreshing || loading ? 'animate-spin' : ''}`} />
+            {isRefreshing ? 'Atualizando...' : 'Sincronizar'}
+          </Button>
+
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-primary hover:bg-primary/90">
+                <Plus className="w-4 h-4 mr-2" />
+                Novo Produto
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Adicionar ao Estoque</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium flex items-center gap-2">
+                    <Tag className="w-4 h-4 text-muted-foreground" /> Nome do Produto
+                  </label>
+                  <Input
+                    placeholder="Ex: Camiseta Branca G"
+                    value={newProduct.name}
+                    onChange={e => setNewProduct({ ...newProduct, name: e.target.value })}
+                  />
                 </div>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="border rounded-lg overflow-x-auto">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium flex items-center gap-2">
+                      <Hash className="w-4 h-4 text-muted-foreground" /> Quantidade
+                    </label>
+                    <Input
+                      type="number"
+                      value={newProduct.quantity}
+                      onChange={e => setNewProduct({ ...newProduct, quantity: parseInt(e.target.value) || 0 })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-muted-foreground" /> Estoque Mínimo
+                    </label>
+                    <Input
+                      type="number"
+                      value={newProduct.minimum_stock}
+                      onChange={e => setNewProduct({ ...newProduct, minimum_stock: parseInt(e.target.value) || 0 })}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Categoria</label>
+                  <Input
+                    placeholder="Ex: Vestuário"
+                    value={newProduct.category}
+                    onChange={e => setNewProduct({ ...newProduct, category: e.target.value })}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancelar</Button>
+                <Button onClick={handleAddProduct} disabled={isAdding}>
+                  {isAdding ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+                  Salvar Produto
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </div>
+
+      {/* Tabela de Produtos */}
+      <Card className="shadow-sm border-muted">
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
             <UITable>
-              <TableHeader>
+              <TableHeader className="bg-muted/50">
                 <TableRow>
-                  {headers.map((header, idx) => (
-                    <TableHead key={idx}>{header}</TableHead>
-                  ))}
-                  <TableHead>Ações</TableHead>
+                  <TableHead className="w-[40%]">Produto</TableHead>
+                  <TableHead>Categoria</TableHead>
+                  <TableHead className="text-center">Quantidade</TableHead>
+                  <TableHead className="text-center">Mínimo</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {data.map((row, rowIdx) => (
-                  <EstoqueRow
-                    key={rowIdx}
-                    row={row}
-                    rowIdx={rowIdx}
-                    handleCellChange={handleCellChange}
-                    syncCell={syncCell}
-                    deleteRow={deleteRow}
-                  />
-                ))}
+                {loading && products.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-32 text-center">
+                      <div className="flex flex-col items-center justify-center gap-2">
+                        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                        <span className="text-sm text-muted-foreground font-medium">Carregando estoque...</span>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : products.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-32 text-center text-muted-foreground">
+                      Nenhum produto cadastrado no Supabase.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  products.map((product) => (
+                    <TableRow key={product.id} className="hover:bg-muted/30 transition-colors">
+                      <TableCell className="font-medium">{product.name}</TableCell>
+                      <TableCell><Badge variant="outline">{product.category}</Badge></TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <Input
+                            type="number"
+                            value={product.quantity}
+                            onChange={(e) => handleUpdateQuantity(product.id, e.target.value)}
+                            className={`w-20 h-8 text-center ${product.quantity < product.minimum_stock ? 'border-destructive text-destructive font-bold' : ''}`}
+                          />
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center text-muted-foreground">{product.minimum_stock}</TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => handleDeleteProduct(product.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </UITable>
           </div>

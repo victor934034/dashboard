@@ -86,6 +86,18 @@ export const campanhasApi = {
   delete: (id: string | number) => api.delete(`/campanhas/${id}`)
 };
 
+// Stock API (Supabase)
+export const stockApi = {
+  getProducts: () => api.get('/stock/products'),
+  getLowStock: () => api.get('/stock/low-stock'),
+  updateQuantity: (id: string | number, quantity: number) =>
+    api.patch(`/stock/products/${id}/quantity`, { quantity }),
+  updateProduct: (id: string | number, data: any) =>
+    api.put(`/stock/products/${id}`, data),
+  addProduct: (data: any) => api.post('/stock/products', data),
+  deleteProduct: (id: string | number) => api.delete(`/stock/products/${id}`)
+};
+
 // Auth API
 export const authApi = {
   login: (email: string, password: string) =>
