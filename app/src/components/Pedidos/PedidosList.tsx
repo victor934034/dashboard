@@ -28,7 +28,6 @@ export default function PedidosList() {
     faturamento: 0
   });
   const [loading, setLoading] = useState(false);
-  const [selectedPedido, setSelectedPedido] = useState<Pedido | null>(null);
 
   useEffect(() => {
     loadPedidos();
