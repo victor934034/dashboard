@@ -6,22 +6,24 @@ class BaserowService {
     this.apiUrl = process.env.BASEROW_API_URL || 'https://api.baserow.io';
     this.email = process.env.BASEROW_EMAIL;
     this.password = process.env.BASEROW_PASSWORD;
+    this.token = process.env.BASEROW_TOKEN; // Suporte a token direto (Database Token)
     this.tableIdLeads = process.env.BASEROW_TABLE_ID;
     this.tableIdPedidos = process.env.BASEROW_PEDIDOS_TABLE_ID;
     this.tableIdCampanhas = process.env.BASEROW_CAMPANHAS_TABLE_ID;
-    this.token = null;
+    this.jwtToken = null;
 
-    if (!this.email || !this.password) {
-      console.warn('⚠️ Baserow credentials (EMAIL/PASSWORD) not found in environment');
+    if (!this.token && (!this.email || !this.password)) {
+      console.warn('⚠️ Baserow: Nem TOKEN nem EMAIL/PASSWORD foram encontrados no ambiente.');
     }
   }
 
   async checkConnection() {
     const status = {
-      credentials: !!(this.email && this.password),
+      credentials: !!(this.token || (this.email && this.password)),
+      auth_method: this.token ? 'Token' : (this.email ? 'JWT (Email/Senha)' : 'Nenhum'),
       env_vars: {
+        BASEROW_TOKEN: this.token ? `*** (len: ${this.token.length})` : 'MISSING',
         BASEROW_EMAIL: this.email ? `${this.email.substring(0, 3)}***` : 'MISSING',
-        BASEROW_PASSWORD: this.password ? `*** (len: ${this.password.length})` : 'MISSING',
         BASEROW_TABLE_ID: this.tableIdLeads || 'MISSING',
         BASEROW_PEDIDOS_TABLE_ID: this.tableIdPedidos || 'MISSING',
         BASEROW_CAMPANHAS_TABLE_ID: this.tableIdCampanhas || 'MISSING'
@@ -86,6 +88,15 @@ class BaserowService {
   }
 
   async getHeaders() {
+    // Se tivermos um Token direto (Database Token), usamos ele
+    if (this.token) {
+      return {
+        'Authorization': `Token ${this.token}`,
+        'Content-Type': 'application/json'
+      };
+    }
+
+    // Caso contrário, tenta autenticação JWT (Email/Senha)
     const token = await this.authenticate();
     return {
       'Authorization': `JWT ${token}`,
