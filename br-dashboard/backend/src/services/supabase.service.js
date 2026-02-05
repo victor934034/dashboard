@@ -52,7 +52,11 @@ class SupabaseService {
     async getProducts() {
         try {
             if (!this.supabase) {
-                throw new Error("Supabase client not initialized. Check SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in environment variables.");
+                return {
+                    success: false,
+                    error: "Supabase não configurado. Verifique as variáveis de ambiente no EasyPanel.",
+                    products: []
+                };
             }
 
             const { data, error } = await this.supabase
@@ -62,23 +66,23 @@ class SupabaseService {
 
             if (error) throw error;
 
-            // Map to the format the frontend expects
+            // Mapeamento flexível para nomes de colunas
             const products = data.map(item => ({
                 id: item.id,
-                name: item.nome,
+                name: item.nome || 'Produto sem nome',
                 quantity: parseInt(item.estoque) || 0,
                 minimum_stock: parseInt(item.estoque_minimo) || 0,
                 category: item.categoria_nivel_1 || 'Geral',
-                price: item.preco,
-                brand: item.marca,
-                color: item.cor,
-                image: item.imagem
+                price: item.preco || '0,00',
+                brand: item.marca || '',
+                color: item.cor || '',
+                image: item.Imagem || item.imagem || null // Suporta 'Imagem' ou 'imagem'
             }));
 
             return { success: true, products };
         } catch (error) {
-            console.error('❌ Erro ao buscar produtos no Supabase:', error.message);
-            return { success: false, error: error.message };
+            console.error('❌ Erro no Supabase getProducts:', error.message);
+            return { success: false, error: error.message, products: [] };
         }
     }
 
@@ -125,21 +129,38 @@ class SupabaseService {
 
     async addProduct(productData) {
         try {
+            if (!this.supabase) throw new Error("Supabase não inicializado");
+
+            const insertPayload = {
+                nome: productData.name,
+                estoque: parseInt(productData.quantity) || 0,
+                categoria_nivel_1: productData.category || 'Geral',
+                preco: productData.price || '0,00',
+                marca: productData.brand || null,
+                cor: productData.color || null,
+                Imagem: productData.image || null // Usa 'Imagem' para manter compatibilidade com a tabela atual
+            };
+
+            // Somente inclui estoque_minimo se for fornecido (evita erro de coluna inexistente)
+            if (productData.minimum_stock !== undefined && productData.minimum_stock !== null) {
+                insertPayload.estoque_minimo = parseInt(productData.minimum_stock);
+            }
+
             const { data, error } = await this.supabase
                 .from('estoque')
-                .insert([{
-                    nome: productData.name,
-                    estoque: parseInt(productData.quantity) || 0,
-                    estoque_minimo: parseInt(productData.minimum_stock) || 0,
-                    categoria_nivel_1: productData.category || 'Geral',
-                    preco: productData.price || '0,00',
-                    marca: productData.brand || null,
-                    cor: productData.color || null,
-                    imagem: productData.image || null
-                }])
+                .insert([insertPayload])
                 .select();
 
-            if (error) throw error;
+            if (error) {
+                // Se o erro for coluna inexistente para estoque_minimo, tenta de novo sem ele
+                if (error.message.includes('column "estoque_minimo" does not exist')) {
+                    delete insertPayload.estoque_minimo;
+                    const retry = await this.supabase.from('estoque').insert([insertPayload]).select();
+                    if (retry.error) throw retry.error;
+                    return { success: true, product: retry.data[0] };
+                }
+                throw error;
+            }
             return { success: true, product: data[0] };
         } catch (error) {
             console.error('❌ Erro ao adicionar produto no Supabase:', error.message);
