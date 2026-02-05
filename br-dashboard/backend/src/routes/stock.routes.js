@@ -66,4 +66,14 @@ router.get('/low-stock', async (req, res) => {
     }
 });
 
+// Diagnóstico de conexão (para depuração)
+router.get('/status', async (req, res) => {
+    try {
+        const result = await supabaseService.checkConnection();
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 module.exports = router;

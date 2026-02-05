@@ -5,17 +5,56 @@ class SupabaseService {
     constructor() {
         this.supabaseUrl = process.env.SUPABASE_URL;
         this.supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+        this.supabase = null;
 
         if (this.supabaseUrl && this.supabaseKey) {
-            this.supabase = createClient(this.supabaseUrl, this.supabaseKey);
-            console.log('✅ Supabase Client inicializado');
+            try {
+                this.supabase = createClient(this.supabaseUrl, this.supabaseKey);
+                console.log('✅ Supabase Client inicializado');
+            } catch (error) {
+                console.error('❌ Erro ao inicializar Supabase Client:', error.message);
+            }
         } else {
-            console.warn('⚠️ Supabase credentials not found in environment');
+            console.warn('⚠️ Supabase credentials not found in environment (SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)');
         }
+    }
+
+    async checkConnection() {
+        const status = {
+            url: !!this.supabaseUrl,
+            key: !!this.supabaseKey,
+            initialized: !!this.supabase,
+            timestamp: new Date().toISOString(),
+            table_accessible: false,
+            error: null
+        };
+
+        if (!this.supabase) {
+            status.error = "Client not initialized - Check environment variables";
+            return status;
+        }
+
+        try {
+            const { count, error } = await this.supabase
+                .from('estoque')
+                .select('*', { count: 'exact', head: true });
+
+            if (error) throw error;
+            status.table_accessible = true;
+            status.count = count;
+        } catch (error) {
+            status.error = error.message;
+        }
+
+        return status;
     }
 
     async getProducts() {
         try {
+            if (!this.supabase) {
+                throw new Error("Supabase client not initialized. Check SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in environment variables.");
+            }
+
             const { data, error } = await this.supabase
                 .from('estoque')
                 .select('*')
