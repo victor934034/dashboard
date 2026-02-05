@@ -19,9 +19,13 @@ class BaserowService {
   async checkConnection() {
     const status = {
       credentials: !!(this.email && this.password),
-      leads_table: !!this.tableIdLeads,
-      pedidos_table: !!this.tableIdPedidos,
-      campanhas_table: !!this.tableIdCampanhas,
+      env_vars: {
+        BASEROW_EMAIL: this.email ? `${this.email.substring(0, 3)}***` : 'MISSING',
+        BASEROW_PASSWORD: this.password ? `*** (len: ${this.password.length})` : 'MISSING',
+        BASEROW_TABLE_ID: this.tableIdLeads || 'MISSING',
+        BASEROW_PEDIDOS_TABLE_ID: this.tableIdPedidos || 'MISSING',
+        BASEROW_CAMPANHAS_TABLE_ID: this.tableIdCampanhas || 'MISSING'
+      },
       authenticated: false,
       tables_accessible: {
         leads: false,
