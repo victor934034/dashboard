@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Table, AlertTriangle, Plus, Trash2, Loader2, RefreshCcw, Package, Tag, Hash, ShieldAlert, Image as ImageIcon, Wallet, Info, Search } from 'lucide-react';
+import { Plus, Trash2, Loader2, RefreshCcw, Package, ShieldAlert, Image as ImageIcon, Wallet, Info, Search, Save } from 'lucide-react';
 import { stockApi } from '@/services/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
