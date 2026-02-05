@@ -62,6 +62,7 @@ export interface Lead {
   status: 'novo' | 'contatado' | 'qualificado' | 'proposta' | 'fechado' | 'perdido';
   origem?: string;
   notas?: string;
+  data: string;
   createdAt?: string;
   updatedAt?: string;
 }
