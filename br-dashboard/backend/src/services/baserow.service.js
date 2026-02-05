@@ -10,6 +10,52 @@ class BaserowService {
     this.tableIdPedidos = process.env.BASEROW_PEDIDOS_TABLE_ID;
     this.tableIdCampanhas = process.env.BASEROW_CAMPANHAS_TABLE_ID;
     this.token = null;
+
+    if (!this.email || !this.password) {
+      console.warn('⚠️ Baserow credentials (EMAIL/PASSWORD) not found in environment');
+    }
+  }
+
+  async checkConnection() {
+    const status = {
+      credentials: !!(this.email && this.password),
+      leads_table: !!this.tableIdLeads,
+      pedidos_table: !!this.tableIdPedidos,
+      campanhas_table: !!this.tableIdCampanhas,
+      authenticated: false,
+      tables_accessible: {
+        leads: false,
+        pedidos: false,
+        campanhas: false
+      },
+      errors: []
+    };
+
+    try {
+      const headers = await this.getHeaders();
+      status.authenticated = true;
+
+      const tables = [
+        { key: 'leads', id: this.tableIdLeads },
+        { key: 'pedidos', id: this.tableIdPedidos },
+        { key: 'campanhas', id: this.tableIdCampanhas }
+      ];
+
+      for (const table of tables) {
+        if (table.id) {
+          try {
+            await axios.get(`${this.apiUrl}/api/database/rows/table/${table.id}/?size=1`, { headers });
+            status.tables_accessible[table.key] = true;
+          } catch (e) {
+            status.errors.push(`${table.key}: ${e.message}`);
+          }
+        }
+      }
+    } catch (error) {
+      status.errors.push(`Auth Error: ${error.message}`);
+    }
+
+    return status;
   }
 
   async authenticate() {

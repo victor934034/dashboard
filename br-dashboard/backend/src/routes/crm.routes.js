@@ -2,6 +2,16 @@ const express = require('express');
 const router = express.Router();
 const baserowService = require('../services/baserow.service');
 
+// Diagnóstico Baserow
+router.get('/status', async (req, res) => {
+  try {
+    const result = await baserowService.checkConnection();
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Listar leads
 router.get('/leads', async (req, res) => {
   try {
