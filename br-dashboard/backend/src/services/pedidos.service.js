@@ -1,26 +1,12 @@
-const fs = require('fs');
-const path = require('path');
+const baserowService = require('./baserow.service');
 
 class PedidosService {
-    constructor() {
-        this.storagePath = path.join(__dirname, '../data/pedidos.json');
-        this.ensureStorage();
-    }
-
-    ensureStorage() {
-        const dir = path.dirname(this.storagePath);
-        if (!fs.existsSync(dir)) {
-            fs.mkdirSync(dir, { recursive: true });
-        }
-        if (!fs.existsSync(this.storagePath)) {
-            fs.writeFileSync(this.storagePath, JSON.stringify([], null, 2));
-        }
-    }
-
     async getPedidos(filters = {}) {
         try {
-            const data = fs.readFileSync(this.storagePath, 'utf8');
-            let pedidos = JSON.parse(data);
+            const result = await baserowService.getPedidos();
+            if (!result.success) return result;
+
+            let pedidos = result.pedidos;
 
             // Aplicar filtros
             if (filters.status) {
@@ -37,7 +23,7 @@ class PedidosService {
                 total: pedidos.length
             };
         } catch (error) {
-            console.error('❌ Erro ao ler pedidos do arquivo:', error.message);
+            console.error('❌ Erro ao buscar pedidos no Baserow:', error.message);
             return {
                 success: false,
                 pedidos: [],
@@ -49,7 +35,7 @@ class PedidosService {
     async getPedidoById(id) {
         try {
             const result = await this.getPedidos();
-            const pedido = result.pedidos.find(p => p.id === id);
+            const pedido = result.pedidos.find(p => String(p.id) === String(id));
 
             if (!pedido) {
                 return { success: false, error: 'Pedido não encontrado' };
@@ -64,36 +50,25 @@ class PedidosService {
 
     async addPedido(pedidoData) {
         try {
-            const result = await this.getPedidos();
-            const pedidos = result.pedidos;
-
-            const novoPedido = {
-                id: pedidoData.id || `PED-${Date.now()}`,
+            // Mapeia campos do n8n/agente
+            const dataToSave = {
                 cliente: pedidoData.cliente || 'Cliente não informado',
                 itens: typeof pedidoData.itens === 'string' ? pedidoData.itens : JSON.stringify(pedidoData.itens),
                 total: parseFloat(pedidoData.total) || 0,
                 endereco: pedidoData.endereco || 'Não informado',
                 whatsapp: pedidoData.whatsapp || 'Não informado',
-                data_hora: pedidoData.data_hora || new Date().toLocaleString('pt-BR', {
-                    timeZone: 'America/Sao_Paulo'
-                }),
-                status: pedidoData.status_pedido || pedidoData.status || 'pendente', // Mapeia status_pedido do n8n
-                etapa: pedidoData.etapa || 'Novo', // Mapeia etapa do CRM
-                origem: pedidoData.origem || 'whatsapp',
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
+                data_hora: pedidoData.data_hora || new Date().toLocaleString('pt-BR'),
+                status: pedidoData.status_pedido || pedidoData.status || 'pendente',
+                origem: pedidoData.origem || 'whatsapp'
             };
 
-            pedidos.unshift(novoPedido); // Adiciona no início (mais recentes primeiro)
-            fs.writeFileSync(this.storagePath, JSON.stringify(pedidos, null, 2));
+            const result = await baserowService.createPedido(dataToSave);
 
-            console.log('✅ Pedido salvo:', novoPedido.id);
+            if (result.success) {
+                console.log('✅ Pedido salvo no Baserow:', result.pedido.id);
+            }
 
-            return {
-                success: true,
-                message: 'Pedido registrado com sucesso!',
-                pedido: novoPedido
-            };
+            return result;
         } catch (error) {
             console.error('Erro ao salvar pedido:', error);
             throw error;
@@ -102,26 +77,7 @@ class PedidosService {
 
     async updatePedido(id, updateData) {
         try {
-            const result = await this.getPedidos();
-            const pedidos = result.pedidos;
-            const index = pedidos.findIndex(p => p.id === id);
-
-            if (index === -1) {
-                return { success: false, error: 'Pedido não encontrado' };
-            }
-
-            pedidos[index] = {
-                ...pedidos[index],
-                ...updateData,
-                updatedAt: new Date().toISOString()
-            };
-
-            fs.writeFileSync(this.storagePath, JSON.stringify(pedidos, null, 2));
-
-            return {
-                success: true,
-                pedido: pedidos[index]
-            };
+            return await baserowService.updatePedido(id, updateData);
         } catch (error) {
             console.error('Erro ao atualizar pedido:', error);
             throw error;
@@ -130,11 +86,7 @@ class PedidosService {
 
     async deletePedido(id) {
         try {
-            const result = await this.getPedidos();
-            const filtered = result.pedidos.filter(p => p.id !== id);
-
-            fs.writeFileSync(this.storagePath, JSON.stringify(filtered, null, 2));
-            return { success: true };
+            return await baserowService.deletePedido(id);
         } catch (error) {
             console.error('Erro ao deletar pedido:', error);
             throw error;
@@ -144,6 +96,8 @@ class PedidosService {
     async getStats() {
         try {
             const result = await this.getPedidos();
+            if (!result.success) return result;
+
             const pedidos = result.pedidos;
 
             const total = pedidos.length;

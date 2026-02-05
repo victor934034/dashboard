@@ -1,29 +1,30 @@
 const axios = require('axios');
+require('dotenv').config();
 
 class BaserowService {
   constructor() {
     this.apiUrl = process.env.BASEROW_API_URL || 'https://api.baserow.io';
+    this.email = process.env.BASEROW_EMAIL;
+    this.password = process.env.BASEROW_PASSWORD;
+    this.tableIdLeads = process.env.BASEROW_TABLE_ID;
+    this.tableIdPedidos = process.env.BASEROW_PEDIDOS_TABLE_ID;
+    this.tableIdCampanhas = process.env.BASEROW_CAMPANHAS_TABLE_ID;
     this.token = null;
-    this.tokenExpiry = null;
   }
 
   async authenticate() {
     try {
-      if (this.token && this.tokenExpiry && Date.now() < this.tokenExpiry) {
-        return this.token;
-      }
+      if (this.token) return this.token;
 
       const response = await axios.post(`${this.apiUrl}/api/user/token-auth/`, {
-        email: process.env.BASEROW_EMAIL,
-        password: process.env.BASEROW_PASSWORD
+        email: this.email,
+        password: this.password
       });
 
       this.token = response.data.token;
-      this.tokenExpiry = Date.now() + (24 * 60 * 60 * 1000);
-
       return this.token;
     } catch (error) {
-      console.error('Erro ao autenticar no Baserow:', error.message);
+      console.error('❌ Erro de autenticação no Baserow:', error.message);
       throw error;
     }
   }
@@ -36,22 +37,13 @@ class BaserowService {
     };
   }
 
+  // --- LEADS (CRM) ---
   async getLeads() {
     try {
-      const tableId = process.env.BASEROW_TABLE_ID;
-      if (!tableId) {
-        return { success: false, error: 'BASEROW_TABLE_ID não configurado' };
-      }
-
       const headers = await this.getHeaders();
-      const response = await axios.get(
-        `${this.apiUrl}/api/database/rows/table/${tableId}/?user_field_names=true`,
-        { headers }
-      );
+      const response = await axios.get(`${this.apiUrl}/api/database/rows/table/${this.tableIdLeads}/?user_field_names=true`, { headers });
 
       const results = response.data.results || [];
-
-      // Mapear campos do Baserow para o formato esperado pelo Frontend
       const leads = results.map(row => ({
         id: row.id,
         nome: row.Nome || row.nome || row.Pushname || "Lead s/ Nome",
@@ -59,28 +51,20 @@ class BaserowService {
         email: row.Email || row.email || "",
         status: (row.Status?.value || row.status?.value || row.Status || row.status || "novo").toLowerCase(),
         origem: row.Origem || row.origem || "WhatsApp",
-        notas: row.Notas || row.notas || row['nova info para guardar'] || "",
-        data: row['Data Cadastrado'] || row['data_cadastrado'] || row['Created on'] || new Date().toISOString()
+        notas: row.Notas || row.notas || "",
+        data: row['Data Cadastrado'] || row['data_cadastrado'] || new Date().toISOString()
       }));
 
-      return {
-        success: true,
-        leads: leads
-      };
+      return { success: true, leads };
     } catch (error) {
-      console.error('Erro ao buscar leads:', error.message);
+      console.error('❌ Erro ao buscar leads no Baserow:', error.message);
       return { success: false, error: error.message };
     }
   }
 
   async createLead(leadData) {
     try {
-      const tableId = process.env.BASEROW_TABLE_ID;
-      if (!tableId) {
-        return { success: false, error: 'BASEROW_TABLE_ID não configurado' };
-      }
-
-      // Mapear campos do Frontend para o Baserow
+      const headers = await this.getHeaders();
       const baserowData = {
         'Nome': leadData.nome || 'Lead s/ Nome',
         'Telefone': leadData.telefone || '',
@@ -88,34 +72,20 @@ class BaserowService {
         'Status': leadData.status ? leadData.status.charAt(0).toUpperCase() + leadData.status.slice(1) : 'Novo',
         'Origem': leadData.origem || 'Dashboard',
         'Notas': leadData.notas || '',
-        'Data Cadastrado': new Date().toISOString()
+        'Data Cadastrado': leadData.data || new Date().toISOString()
       };
 
-      const headers = await this.getHeaders();
-      const response = await axios.post(
-        `${this.apiUrl}/api/database/rows/table/${tableId}/?user_field_names=true`,
-        baserowData,
-        { headers }
-      );
-
-      return {
-        success: true,
-        lead: response.data
-      };
+      const response = await axios.post(`${this.apiUrl}/api/database/rows/table/${this.tableIdLeads}/?user_field_names=true`, baserowData, { headers });
+      return { success: true, lead: response.data };
     } catch (error) {
-      console.error('Erro ao criar lead:', error.message);
+      console.error('❌ Erro ao criar lead no Baserow:', error.message);
       return { success: false, error: error.message };
     }
   }
 
   async updateLead(leadId, leadData) {
     try {
-      const tableId = process.env.BASEROW_TABLE_ID;
-      if (!tableId) {
-        return { success: false, error: 'BASEROW_TABLE_ID não configurado' };
-      }
-
-      // Mapear campos do Frontend para o Baserow
+      const headers = await this.getHeaders();
       const baserowData = {};
       if (leadData.nome !== undefined) baserowData['Nome'] = leadData.nome;
       if (leadData.telefone !== undefined) baserowData['Telefone'] = leadData.telefone;
@@ -126,39 +96,168 @@ class BaserowService {
       if (leadData.origem !== undefined) baserowData['Origem'] = leadData.origem;
       if (leadData.notas !== undefined) baserowData['Notas'] = leadData.notas;
 
-      const headers = await this.getHeaders();
-      const response = await axios.patch(
-        `${this.apiUrl}/api/database/rows/table/${tableId}/${leadId}/?user_field_names=true`,
-        baserowData,
-        { headers }
-      );
-
-      return {
-        success: true,
-        lead: response.data
-      };
+      const response = await axios.patch(`${this.apiUrl}/api/database/rows/table/${this.tableIdLeads}/${leadId}/?user_field_names=true`, baserowData, { headers });
+      return { success: true, lead: response.data };
     } catch (error) {
-      console.error('Erro ao atualizar lead:', error.message);
+      console.error('❌ Erro ao atualizar lead no Baserow:', error.message);
       return { success: false, error: error.message };
     }
   }
 
   async deleteLead(leadId) {
     try {
-      const tableId = process.env.BASEROW_TABLE_ID;
-      if (!tableId) {
-        return { success: false, error: 'BASEROW_TABLE_ID não configurado' };
-      }
-
       const headers = await this.getHeaders();
-      await axios.delete(
-        `${this.apiUrl}/api/database/rows/table/${tableId}/${leadId}/`,
-        { headers }
-      );
-
+      await axios.delete(`${this.apiUrl}/api/database/rows/table/${this.tableIdLeads}/${leadId}/`, { headers });
       return { success: true };
     } catch (error) {
-      console.error('Erro ao deletar lead:', error.message);
+      console.error('❌ Erro ao deletar lead no Baserow:', error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // --- PEDIDOS ---
+  async getPedidos() {
+    try {
+      const headers = await this.getHeaders();
+      const response = await axios.get(`${this.apiUrl}/api/database/rows/table/${this.tableIdPedidos}/?user_field_names=true`, { headers });
+
+      const results = response.data.results || [];
+      const pedidos = results.map(row => ({
+        id: row.id,
+        cliente: row.Cliente || "",
+        itens: row.Itens || "",
+        total: parseFloat(row.Total) || 0,
+        endereco: row.Endereco || "",
+        whatsapp: row.Whatsapp || "",
+        data_hora: row['Data Hora'] || row.data_hora || "",
+        status: (row.Status?.value || row.status?.value || row.Status || row.status || "pendente"),
+        origem: row.Origem || ""
+      }));
+
+      return { success: true, pedidos };
+    } catch (error) {
+      console.error('❌ Erro ao buscar pedidos no Baserow:', error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async createPedido(pedidoData) {
+    try {
+      const headers = await this.getHeaders();
+      const baserowData = {
+        'Cliente': pedidoData.cliente || '',
+        'Itens': pedidoData.itens || '',
+        'Total': parseFloat(pedidoData.total) || 0,
+        'Endereco': pedidoData.endereco || '',
+        'Whatsapp': pedidoData.whatsapp || '',
+        'Data Hora': pedidoData.data_hora || new Date().toLocaleString('pt-BR'),
+        'Status': pedidoData.status || 'pendente',
+        'Origem': pedidoData.origem || 'n8n'
+      };
+
+      const response = await axios.post(`${this.apiUrl}/api/database/rows/table/${this.tableIdPedidos}/?user_field_names=true`, baserowData, { headers });
+      return { success: true, pedido: response.data };
+    } catch (error) {
+      console.error('❌ Erro ao criar pedido no Baserow:', error.response?.data || error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async updatePedido(pedidoId, pedidoData) {
+    try {
+      const headers = await this.getHeaders();
+      const baserowData = {};
+      if (pedidoData.cliente !== undefined) baserowData['Cliente'] = pedidoData.cliente;
+      if (pedidoData.itens !== undefined) baserowData['Itens'] = pedidoData.itens;
+      if (pedidoData.total !== undefined) baserowData['Total'] = parseFloat(pedidoData.total);
+      if (pedidoData.endereco !== undefined) baserowData['Endereco'] = pedidoData.endereco;
+      if (pedidoData.whatsapp !== undefined) baserowData['Whatsapp'] = pedidoData.whatsapp;
+      if (pedidoData.status !== undefined) baserowData['Status'] = pedidoData.status;
+
+      const response = await axios.patch(`${this.apiUrl}/api/database/rows/table/${this.tableIdPedidos}/${pedidoId}/?user_field_names=true`, baserowData, { headers });
+      return { success: true, pedido: response.data };
+    } catch (error) {
+      console.error('❌ Erro ao atualizar pedido no Baserow:', error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async deletePedido(pedidoId) {
+    try {
+      const headers = await this.getHeaders();
+      await axios.delete(`${this.apiUrl}/api/database/rows/table/${this.tableIdPedidos}/${pedidoId}/`, { headers });
+      return { success: true };
+    } catch (error) {
+      console.error('❌ Erro ao deletar pedido no Baserow:', error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // --- CAMPANHAS ---
+  async getCampanhas() {
+    try {
+      const headers = await this.getHeaders();
+      const response = await axios.get(`${this.apiUrl}/api/database/rows/table/${this.tableIdCampanhas}/?user_field_names=true`, { headers });
+
+      const results = response.data.results || [];
+      const campanhas = results.map(row => ({
+        id: row.id,
+        nome: row.Nome || "",
+        descricao: row.Descricao || "",
+        link: row.Link || "",
+        ativa: !!row.Ativa,
+        criadoEm: row['Created on'] || new Date().toISOString()
+      }));
+
+      return { success: true, campanhas };
+    } catch (error) {
+      console.error('❌ Erro ao buscar campanhas no Baserow:', error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async createCampanha(campanhaData) {
+    try {
+      const headers = await this.getHeaders();
+      const baserowData = {
+        'Nome': campanhaData.nome || '',
+        'Descricao': campanhaData.descricao || '',
+        'Link': campanhaData.link || '',
+        'Ativa': campanhaData.ativa !== false
+      };
+
+      const response = await axios.post(`${this.apiUrl}/api/database/rows/table/${this.tableIdCampanhas}/?user_field_names=true`, baserowData, { headers });
+      return { success: true, campanha: response.data };
+    } catch (error) {
+      console.error('❌ Erro ao criar campanha no Baserow:', error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async updateCampanha(campanhaId, campanhaData) {
+    try {
+      const headers = await this.getHeaders();
+      const baserowData = {};
+      if (campanhaData.nome !== undefined) baserowData['Nome'] = campanhaData.nome;
+      if (campanhaData.descricao !== undefined) baserowData['Descricao'] = campanhaData.descricao;
+      if (campanhaData.link !== undefined) baserowData['Link'] = campanhaData.link;
+      if (campanhaData.ativa !== undefined) baserowData['Ativa'] = !!campanhaData.ativa;
+
+      const response = await axios.patch(`${this.apiUrl}/api/database/rows/table/${this.tableIdCampanhas}/${campanhaId}/?user_field_names=true`, baserowData, { headers });
+      return { success: true, campanha: response.data };
+    } catch (error) {
+      console.error('❌ Erro ao atualizar campanha no Baserow:', error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async deleteCampanha(campanhaId) {
+    try {
+      const headers = await this.getHeaders();
+      await axios.delete(`${this.apiUrl}/api/database/rows/table/${this.tableIdCampanhas}/${campanhaId}/`, { headers });
+      return { success: true };
+    } catch (error) {
+      console.error('❌ Erro ao deletar campanha no Baserow:', error.message);
       return { success: false, error: error.message };
     }
   }

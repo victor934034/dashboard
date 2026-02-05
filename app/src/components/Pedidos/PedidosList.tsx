@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { ShoppingCart, Package, CheckCircle, XCircle, Clock, TrendingUp, Trash2 } from 'lucide-react';
+import { ShoppingCart, Package, CheckCircle, XCircle, Clock, TrendingUp, Trash2, Eye, MapPin, Phone, Calendar, Info } from 'lucide-react';
 import { pedidosApi } from '@/services/api';
 import { initializeSocket } from '@/services/socket';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import type { Pedido } from '@/types';
 
@@ -27,6 +28,7 @@ export default function PedidosList() {
     faturamento: 0
   });
   const [loading, setLoading] = useState(false);
+  const [selectedPedido, setSelectedPedido] = useState<Pedido | null>(null);
 
   useEffect(() => {
     loadPedidos();
@@ -101,7 +103,11 @@ export default function PedidosList() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('pt-BR');
+    try {
+      return new Date(dateString).toLocaleString('pt-BR');
+    } catch (e) {
+      return dateString;
+    }
   };
 
   return (
@@ -163,8 +169,11 @@ export default function PedidosList() {
 
       {/* Lista de Pedidos */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Últimos Pedidos</CardTitle>
+          <Button variant="outline" size="sm" onClick={loadPedidos}>
+            Atualizar
+          </Button>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -176,7 +185,7 @@ export default function PedidosList() {
           ) : (
             <div className="space-y-4">
               {pedidos.map(pedido => {
-                const statusInfo = statusConfig[pedido.status];
+                const statusInfo = statusConfig[pedido.status as keyof typeof statusConfig] || statusConfig.pendente;
                 const StatusIcon = statusInfo.icon;
 
                 return (
@@ -185,18 +194,24 @@ export default function PedidosList() {
                       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
-                            <h3 className="font-semibold">{pedido.cliente}</h3>
+                            <h3 className="font-semibold text-lg">{pedido.cliente}</h3>
                             <Badge className={statusInfo.color}>
                               <StatusIcon className="w-3 h-3 mr-1" />
                               {statusInfo.label}
                             </Badge>
                           </div>
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-sm text-muted-foreground line-clamp-1">
                             {pedido.itens}
                           </p>
                           <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-                            <span>{formatDate(pedido.data_hora)}</span>
-                            <span>{pedido.whatsapp}</span>
+                            <span className="flex items-center gap-1">
+                              <Calendar className="w-3 h-3" />
+                              {formatDate(pedido.data_hora)}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Phone className="w-3 h-3" />
+                              {pedido.whatsapp}
+                            </span>
                           </div>
                         </div>
 
@@ -204,30 +219,89 @@ export default function PedidosList() {
                           <p className="text-xl font-bold text-green-600">
                             {formatCurrency(pedido.total)}
                           </p>
-                          <Select
-                            value={pedido.status}
-                            onValueChange={(value) => updateStatus(pedido.id, value)}
-                          >
-                            <SelectTrigger className="w-[140px]">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="pendente">Pendente</SelectItem>
-                              <SelectItem value="processando">Processando</SelectItem>
-                              <SelectItem value="concluido">Concluído</SelectItem>
-                              <SelectItem value="cancelado">Cancelado</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <div className="flex gap-2">
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button variant="outline" size="icon" title="Ver Detalhes">
+                                  <Eye className="w-4 h-4" />
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent className="max-w-md">
+                                <DialogHeader>
+                                  <DialogTitle className="flex items-center gap-2">
+                                    <Info className="w-5 h-5" />
+                                    Detalhes do Pedido
+                                  </DialogTitle>
+                                </DialogHeader>
+                                <div className="space-y-4 py-4">
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                      <label className="text-xs font-bold uppercase text-muted-foreground">Cliente</label>
+                                      <p className="font-medium">{pedido.cliente}</p>
+                                    </div>
+                                    <div>
+                                      <label className="text-xs font-bold uppercase text-muted-foreground">Status</label>
+                                      <div className="mt-1">
+                                        <Badge className={statusInfo.color}>{statusInfo.label}</Badge>
+                                      </div>
+                                    </div>
+                                  </div>
 
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="text-muted-foreground hover:text-destructive"
-                            onClick={() => deletePedido(pedido.id)}
-                            title="Excluir pedido"
-                          >
-                            <Trash2 className="w-5 h-5" />
-                          </Button>
+                                  <div>
+                                    <label className="text-xs font-bold uppercase text-muted-foreground">Itens</label>
+                                    <p className="text-sm border rounded-md p-2 bg-muted/50 mt-1 whitespace-pre-wrap">
+                                      {pedido.itens}
+                                    </p>
+                                  </div>
+
+                                  <div className="space-y-2">
+                                    <div className="flex items-center gap-2 text-sm">
+                                      <MapPin className="w-4 h-4 text-muted-foreground" />
+                                      <span>{pedido.endereco}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-sm">
+                                      <Phone className="w-4 h-4 text-muted-foreground" />
+                                      <span>{pedido.whatsapp}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-sm">
+                                      <Calendar className="w-4 h-4 text-muted-foreground" />
+                                      <span>{formatDate(pedido.data_hora)}</span>
+                                    </div>
+                                  </div>
+
+                                  <div className="pt-4 border-t flex justify-between items-center">
+                                    <span className="font-bold">Total</span>
+                                    <span className="text-2xl font-bold text-green-600">{formatCurrency(pedido.total)}</span>
+                                  </div>
+                                </div>
+                              </DialogContent>
+                            </Dialog>
+
+                            <Select
+                              value={pedido.status}
+                              onValueChange={(value) => updateStatus(String(pedido.id), value)}
+                            >
+                              <SelectTrigger className="w-[140px]">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="pendente">Pendente</SelectItem>
+                                <SelectItem value="processando">Processando</SelectItem>
+                                <SelectItem value="concluido">Concluído</SelectItem>
+                                <SelectItem value="cancelado">Cancelado</SelectItem>
+                              </SelectContent>
+                            </Select>
+
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-muted-foreground hover:text-destructive"
+                              onClick={() => deletePedido(String(pedido.id))}
+                              title="Excluir pedido"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </CardContent>
