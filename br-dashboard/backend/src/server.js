@@ -8,7 +8,6 @@ const { Server } = require('socket.io');
 
 // Importar rotas
 const authRoutes = require('./routes/auth.routes');
-const sheetsRoutes = require('./routes/sheets.routes');
 const crmRoutes = require('./routes/crm.routes');
 const pedidosRoutes = require('./routes/pedidos.routes');
 const campanhasRoutes = require('./routes/campanhas.routes');
@@ -16,7 +15,6 @@ const webhooksRoutes = require('./routes/webhooks.routes');
 const stockRoutes = require('./routes/stock.routes');
 
 // Importar serviços
-const googleSheetsService = require('./services/googleSheets.service');
 
 const app = express();
 const server = http.createServer(app);
@@ -46,7 +44,6 @@ app.use(morgan('combined'));
 
 // Rotas
 app.use('/api/auth', authRoutes);
-app.use('/api/sheets', sheetsRoutes);
 app.use('/api/crm', crmRoutes);
 app.use('/api/pedidos', pedidosRoutes);
 app.use('/api/campanhas', campanhasRoutes);
@@ -109,10 +106,6 @@ io.on('connection', (socket) => {
 async function initializeServices() {
   try {
     console.log('🚀 Inicializando serviços...');
-
-    // Inicializar Google Sheets
-    await googleSheetsService.initialize();
-    console.log('✅ Google Sheets inicializado');
 
   } catch (error) {
     console.error('❌ Erro ao inicializar serviços:', error);

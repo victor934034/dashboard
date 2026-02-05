@@ -36,26 +36,6 @@ export const whatsappApi = {
 };
 */
 
-// Google Sheets API
-export const sheetsApi = {
-  connect: (userId: string, spreadsheetUrl: string) =>
-    api.post('/sheets/connect', { userId, spreadsheetUrl }),
-  read: (userId: string, range?: string, sheetName?: string) =>
-    api.get('/sheets/read', { params: { userId, range, sheetName } }),
-  update: (userId: string, range: string, values: any[], sheetName?: string) =>
-    api.put('/sheets/update', { userId, range, values, sheetName }),
-  addRow: (userId: string, values: any[], sheetName?: string) =>
-    api.post('/sheets/add-row', { userId, values, sheetName }),
-  deleteRow: (userId: string, rowIndex: number, sheetId?: number) =>
-    api.delete(`/sheets/delete-row/${rowIndex}`, { data: { userId, sheetId } }),
-  updateCell: (userId: string, cell: string, value: any, sheetName?: string) =>
-    api.put('/sheets/update-cell', { userId, cell, value, sheetName }),
-  getLowStock: (userId: string) =>
-    api.get('/sheets/low-stock', { params: { userId } }),
-  getStatus: (userId: string) =>
-    api.get('/sheets/status', { params: { userId } })
-};
-
 // CRM API
 export const crmApi = {
   getLeads: () => api.get('/crm/leads'),

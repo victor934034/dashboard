@@ -66,6 +66,12 @@ class BaserowService {
     try {
       if (this.token) return this.token;
 
+      if (!this.email || !this.password) {
+        throw new Error('Credenciais do Baserow ausentes no servidor (BASEROW_EMAIL / BASEROW_PASSWORD)');
+      }
+
+      console.log(`🔑 Tentando autenticar no Baserow (${this.email.substring(0, 3)}***)`);
+
       const response = await axios.post(`${this.apiUrl}/api/user/token-auth/`, {
         email: this.email,
         password: this.password

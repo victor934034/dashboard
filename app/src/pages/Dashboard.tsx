@@ -14,7 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { initializeSocket } from '@/services/socket';
-import { pedidosApi, sheetsApi, crmApi, campanhasApi } from '@/services/api';
+import { pedidosApi, stockApi, crmApi, campanhasApi } from '@/services/api';
 
 export default function Dashboard() {
   const [stats, setStats] = useState({
@@ -70,17 +70,12 @@ export default function Dashboard() {
       loadStats(true);
     });
 
-    // Listeners de estoque (Sheets)
-    socket.on('sheets:updated', () => loadStats(true));
-    socket.on('sheets:row-added', () => loadStats(true));
-    socket.on('sheets:row-deleted', () => loadStats(true));
+    // Listeners de estoque (Supabase) - Podem ser adicionados no futuro para tempo real
+    // socket.on('stock:updated', () => loadStats(true));
 
     return () => {
       clearInterval(interval);
       socket.off('novo-pedido');
-      socket.off('sheets:updated');
-      socket.off('sheets:row-added');
-      socket.off('sheets:row-deleted');
     };
   }, [loadStats]);
 
