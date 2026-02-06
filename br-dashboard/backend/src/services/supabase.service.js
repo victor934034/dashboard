@@ -179,6 +179,13 @@ class SupabaseService {
                     }
                 }
 
+                // Se o erro for de NOT NULL na coluna ID, significa que o banco não está gerando ID automático
+                if (error.message.includes('column "id"') && (error.message.includes('not-null') || error.message.includes('nulo'))) {
+                    console.warn('⚠️ Coluna ID exige valor manual. Gerando ID baseado em timestamp.');
+                    fallbackPayload.id = Date.now();
+                    foundColumn = true;
+                }
+
                 // Se não identificou a coluna mas deu erro de schema, tenta o modo ultra-básico
                 if (error.message.includes('schema cache')) {
                     console.log('🔄 Erro de cache de schema detectado. Tentando apenas campos essenciais.');
@@ -187,6 +194,12 @@ class SupabaseService {
                         estoque: insertPayload.estoque,
                         preco: insertPayload.preco
                     };
+
+                    // Se já falhou por ID antes, adiciona ID aqui também
+                    if (error.message.includes('column "id"')) {
+                        essentialPayload.id = Date.now();
+                    }
+
                     const retry = await this.supabase
                         .from('estoque')
                         .insert([essentialPayload])
@@ -195,18 +208,30 @@ class SupabaseService {
                     if (retry.error) throw retry.error;
                     data = retry.data;
                 } else {
-                    // Tenta novamente com o payload possivelmente reduzido
+                    // Tenta novamente com o payload possivelmente reduzido ou com ID manual
                     const retry = await this.supabase
                         .from('estoque')
                         .insert([fallbackPayload])
                         .select();
 
                     if (retry.error) {
-                        console.error('❌ Falha total no insert:', retry.error);
-                        throw retry.error;
+                        // Se falhou e o erro for ID mas não tínhamos tentado ID ainda
+                        if (retry.error.message.includes('column "id"') && !fallbackPayload.id) {
+                            console.warn('⚠️ Tentativa de insert manual de ID após falha inicial.');
+                            fallbackPayload.id = Date.now();
+                            const secondRetry = await this.supabase.from('estoque').insert([fallbackPayload]).select();
+                            if (secondRetry.error) {
+                                console.error('❌ Falha total mesmo com ID manual:', secondRetry.error);
+                                throw secondRetry.error;
+                            }
+                            data = secondRetry.data;
+                        } else {
+                            console.error('❌ Falha total no insert:', retry.error);
+                            throw retry.error;
+                        }
+                    } else {
+                        data = retry.data;
                     }
-
-                    data = retry.data;
                 }
                 error = null;
 
