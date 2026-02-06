@@ -167,22 +167,48 @@ class SupabaseService {
                 // Se o erro mencionar uma coluna específica, removemos ela e tentamos de novo
                 const columnsToTryRemoving = ['estoque_minimo', 'marca', 'cor', 'categoria_nivel_1', 'Imagem'];
 
+                let foundColumn = false;
                 for (const col of columnsToTryRemoving) {
-                    if (error.message.includes(`column "${col}" does not exist`) || error.message.includes(`coluna "${col}" não existe`)) {
+                    if (
+                        error.message.includes(`column "${col}" does not exist`) ||
+                        error.message.includes(`coluna "${col}" não existe`) ||
+                        error.message.includes(`'${col}' column`)
+                    ) {
                         delete fallbackPayload[col];
+                        foundColumn = true;
                     }
                 }
 
-                // Tenta novamente com o payload possivelmente reduzido
-                const retry = await this.supabase
-                    .from('estoque')
-                    .insert([fallbackPayload])
-                    .select();
+                // Se não identificou a coluna mas deu erro de schema, tenta o modo ultra-básico
+                if (error.message.includes('schema cache')) {
+                    console.log('🔄 Erro de cache de schema detectado. Tentando apenas campos essenciais.');
+                    const essentialPayload = {
+                        nome: insertPayload.nome,
+                        estoque: insertPayload.estoque,
+                        preco: insertPayload.preco
+                    };
+                    const retry = await this.supabase
+                        .from('estoque')
+                        .insert([essentialPayload])
+                        .select();
 
-                if (retry.error) {
-                    console.error('❌ Falha total no insert:', retry.error);
-                    throw retry.error;
+                    if (retry.error) throw retry.error;
+                    data = retry.data;
+                } else {
+                    // Tenta novamente com o payload possivelmente reduzido
+                    const retry = await this.supabase
+                        .from('estoque')
+                        .insert([fallbackPayload])
+                        .select();
+
+                    if (retry.error) {
+                        console.error('❌ Falha total no insert:', retry.error);
+                        throw retry.error;
+                    }
+
+                    data = retry.data;
                 }
+                error = null;
 
                 data = retry.data;
                 error = null;
