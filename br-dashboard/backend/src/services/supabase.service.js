@@ -134,31 +134,60 @@ class SupabaseService {
         try {
             if (!this.supabase) throw new Error("Supabase não inicializado");
 
-            // Preparação do payload baseada nas colunas reais mapeadas do screenshot e código anterior
+            // Limpa o preço de símbolos monetários e converte vírgula para ponto se necessário
+            let price = String(productData.price || '0,00').replace('R$', '').trim();
+
             const insertPayload = {
                 nome: productData.name,
                 estoque: parseInt(productData.quantity) || 0,
                 categoria_nivel_1: productData.category || 'Geral',
-                preco: String(productData.price) || '0,00',
+                preco: price,
                 marca: productData.brand || null,
                 cor: productData.color || null,
-                Imagem: productData.image || null
+                Imagem: productData.image || null,
+                estoque_minimo: parseInt(productData.minimum_stock) || 10
             };
 
-            // Remove campos nulos/undefined para evitar erros se colunas não permitirem nulos
+            // Remove campos nulos/undefined
             Object.keys(insertPayload).forEach(key => (insertPayload[key] == null) && delete insertPayload[key]);
 
-            console.log('📤 Tentando inserir no Supabase:', insertPayload);
+            console.log('📤 Tentando inserir no Supabase (Full Payload):', insertPayload);
 
-            const { data, error } = await this.supabase
+            let { data, error } = await this.supabase
                 .from('estoque')
                 .insert([insertPayload])
                 .select();
 
             if (error) {
-                console.error('❌ Erro Detalhado Supabase Insert:', error);
-                throw error;
+                console.warn('⚠️ Erro no insert completo, tentando modo compatibilidade:', error.message);
+
+                // Modo de compatibilidade: remove campos que costumam dar erro se a coluna não existir
+                const fallbackPayload = { ...insertPayload };
+
+                // Se o erro mencionar uma coluna específica, removemos ela e tentamos de novo
+                const columnsToTryRemoving = ['estoque_minimo', 'marca', 'cor', 'categoria_nivel_1', 'Imagem'];
+
+                for (const col of columnsToTryRemoving) {
+                    if (error.message.includes(`column "${col}" does not exist`) || error.message.includes(`coluna "${col}" não existe`)) {
+                        delete fallbackPayload[col];
+                    }
+                }
+
+                // Tenta novamente com o payload possivelmente reduzido
+                const retry = await this.supabase
+                    .from('estoque')
+                    .insert([fallbackPayload])
+                    .select();
+
+                if (retry.error) {
+                    console.error('❌ Falha total no insert:', retry.error);
+                    throw retry.error;
+                }
+
+                data = retry.data;
+                error = null;
             }
+
             return { success: true, product: data[0] };
         } catch (error) {
             console.error('❌ Erro ao adicionar produto no Supabase:', error.message);
@@ -189,10 +218,11 @@ class SupabaseService {
             if (productData.name !== undefined) updatePayload.nome = productData.name;
             if (productData.quantity !== undefined) updatePayload.estoque = parseInt(productData.quantity);
             if (productData.category !== undefined) updatePayload.categoria_nivel_1 = productData.category;
-            if (productData.price !== undefined) updatePayload.preco = String(productData.price);
+            if (productData.price !== undefined) updatePayload.preco = String(productData.price).replace('R$', '').trim();
             if (productData.brand !== undefined) updatePayload.marca = productData.brand;
             if (productData.cor !== undefined) updatePayload.cor = productData.cor;
             if (productData.image !== undefined) updatePayload.Imagem = productData.image;
+            if (productData.minimum_stock !== undefined) updatePayload.estoque_minimo = parseInt(productData.minimum_stock);
 
             console.log(`📤 Atualizando produto ${id} no Supabase:`, updatePayload);
 

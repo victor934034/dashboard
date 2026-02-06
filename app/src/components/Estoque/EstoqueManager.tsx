@@ -127,6 +127,8 @@ export default function EstoqueManager() {
         setEditingProduct(null);
         setNewProduct({ name: '', quantity: 0, minimum_stock: 0, category: 'Geral', price: '0,00', brand: '', color: '', image: '' });
         loadData(true);
+      } else {
+        toast.error(`${editingProduct ? 'Erro ao atualizar' : 'Erro ao cadastrar'}: ${response.data.error || 'Erro desconhecido'}`);
       }
     } catch (error) {
       toast.error(editingProduct ? 'Erro ao atualizar' : 'Erro ao cadastrar');
