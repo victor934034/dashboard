@@ -53,7 +53,7 @@ export default function History() {
     }, []);
 
     useEffect(() => {
-        loadHistory();
+        loadHistory(true); // Carregamento silencioso para aparecer instantâneo
     }, [loadHistory]);
 
     const formatCurrency = (value: number) => {

@@ -22,14 +22,14 @@ export default function CampanhasList() {
   });
 
   useEffect(() => {
-    loadCampanhas();
+    loadCampanhas(true); // Carregamento silencioso para aparecer instantâneo
   }, []);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const loadCampanhas = async () => {
+  const loadCampanhas = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const response = await campanhasApi.getAll();
 
       // Suporte para array direto (n8n compatible) ou objeto padrão
@@ -41,7 +41,7 @@ export default function CampanhasList() {
     } catch (error) {
       toast.error('Erro ao carregar campanhas');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -85,7 +85,7 @@ export default function CampanhasList() {
           Gestão de Campanhas
         </h1>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={loadCampanhas} disabled={loading}>
+          <Button variant="outline" onClick={() => loadCampanhas()} disabled={loading}>
             <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Atualizar
           </Button>

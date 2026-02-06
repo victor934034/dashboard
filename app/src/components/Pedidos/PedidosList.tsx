@@ -30,7 +30,7 @@ export default function PedidosList() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    loadPedidos();
+    loadPedidos(true); // Carregamento silencioso para aparecer instantâneo
     loadStats();
 
     const socket = initializeSocket();
@@ -46,9 +46,9 @@ export default function PedidosList() {
     };
   }, []);
 
-  const loadPedidos = async () => {
+  const loadPedidos = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const response = await pedidosApi.getAll();
       if (response.data.success) {
         setPedidos(response.data.pedidos || []);
@@ -56,7 +56,7 @@ export default function PedidosList() {
     } catch (error) {
       toast.error('Erro ao carregar pedidos');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -170,7 +170,7 @@ export default function PedidosList() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Últimos Pedidos</CardTitle>
-          <Button variant="outline" size="sm" onClick={loadPedidos}>
+          <Button variant="outline" size="sm" onClick={() => loadPedidos()}>
             Atualizar
           </Button>
         </CardHeader>

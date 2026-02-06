@@ -69,7 +69,7 @@ export default function EstoqueManager() {
   }, []);
 
   useEffect(() => {
-    loadData();
+    loadData(true); // Carregamento silencioso para aparecer instantâneo
   }, [loadData]);
 
   // Filtro de Busca
@@ -290,7 +290,7 @@ export default function EstoqueManager() {
                   <Input
                     type="number"
                     value={newProduct.quantity}
-                    onChange={e => setNewProduct({ ...newProduct, quantity: parseInt(e.target.value) || 0 })}
+                    onChange={e => setNewProduct({ ...newProduct, quantity: parseInt(e.target.value.replace(/^0+/, '')) || 0 })}
                   />
                 </div>
                 <div className="space-y-2">
@@ -298,7 +298,7 @@ export default function EstoqueManager() {
                   <Input
                     type="number"
                     value={newProduct.minimum_stock}
-                    onChange={e => setNewProduct({ ...newProduct, minimum_stock: parseInt(e.target.value) || 0 })}
+                    onChange={e => setNewProduct({ ...newProduct, minimum_stock: parseInt(e.target.value.replace(/^0+/, '')) || 0 })}
                   />
                 </div>
 

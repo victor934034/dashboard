@@ -57,7 +57,7 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
-    loadStats();
+    loadStats(true); // Carregamento silencioso para aparecer instantâneo
 
     // Polling fallback a cada 30 segundos
     const interval = setInterval(() => {

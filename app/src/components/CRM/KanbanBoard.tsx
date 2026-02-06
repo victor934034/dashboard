@@ -32,12 +32,12 @@ export default function KanbanBoard() {
   });
 
   useEffect(() => {
-    loadLeads();
+    loadLeads(true); // Carregamento silencioso para aparecer instantâneo
   }, []);
 
-  const loadLeads = async () => {
+  const loadLeads = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const response = await crmApi.getLeads();
       if (response.data.success) {
         setLeads(response.data.leads || []);
@@ -45,7 +45,7 @@ export default function KanbanBoard() {
     } catch (error) {
       toast.error('Erro ao carregar leads');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -91,7 +91,7 @@ export default function KanbanBoard() {
           CRM - Pipeline de Vendas
         </h1>
         <div className="flex gap-2">
-          <Button variant="outline" size="icon" onClick={loadLeads} disabled={loading}>
+          <Button variant="outline" size="icon" onClick={() => loadLeads()} disabled={loading}>
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </Button>
           <Dialog>
