@@ -238,9 +238,6 @@ class SupabaseService {
                     }
                 }
                 error = null;
-
-                data = retry.data;
-                error = null;
             }
 
             return { success: true, product: data[0] };
