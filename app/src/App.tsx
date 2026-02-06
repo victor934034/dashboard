@@ -9,6 +9,7 @@ import Pedidos from '@/pages/Pedidos';
 import Campanhas from '@/pages/Campanhas';
 import Login from '@/pages/Login';
 import Config from '@/pages/Config';
+import History from '@/pages/History';
 
 function App() {
   const isAuthenticated = () => {
@@ -36,6 +37,7 @@ function App() {
                   <Route path="/pedidos" element={<Pedidos />} />
                   <Route path="/campanhas" element={<Campanhas />} />
                   <Route path="/config" element={<Config />} />
+                  <Route path="/history" element={<History />} />
                 </Routes>
               </Layout>
             </ProtectedRoute>

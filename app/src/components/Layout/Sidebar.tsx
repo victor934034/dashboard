@@ -5,7 +5,8 @@ import {
   Kanban,
   ShoppingCart,
   Megaphone,
-  Settings
+  Settings,
+  History
 } from 'lucide-react';
 
 const menuItems = [
@@ -14,6 +15,7 @@ const menuItems = [
   { path: '/crm', label: 'CRM', icon: Kanban },
   { path: '/pedidos', label: 'Pedidos', icon: ShoppingCart },
   { path: '/campanhas', label: 'Campanhas', icon: Megaphone },
+  { path: '/history', label: 'Histórico', icon: History },
 ];
 
 export default function Sidebar() {

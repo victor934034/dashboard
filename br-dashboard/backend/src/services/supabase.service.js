@@ -88,21 +88,24 @@ class SupabaseService {
 
     async getLowStock() {
         try {
+            if (!this.supabase) return { success: false, products: [] };
+
             const { data, error } = await this.supabase
                 .from('estoque')
                 .select('*');
 
             if (error) throw error;
 
+            // O usuário solicitou detectar itens com menos de 10
             const lowStock = data
                 .map(item => ({
                     id: item.id,
                     name: item.nome,
                     quantity: parseInt(item.estoque) || 0,
-                    minimum_stock: parseInt(item.estoque_minimo) || 0,
+                    minimum_stock: 10, // Força 10 como threshold conforme solicitado
                     category: item.categoria_nivel_1 || 'Geral'
                 }))
-                .filter(item => item.quantity < item.minimum_stock);
+                .filter(item => item.quantity < 10);
 
             return { success: true, products: lowStock };
         } catch (error) {
@@ -131,20 +134,21 @@ class SupabaseService {
         try {
             if (!this.supabase) throw new Error("Supabase não inicializado");
 
+            // Preparação do payload baseada nas colunas reais mapeadas do screenshot e código anterior
             const insertPayload = {
                 nome: productData.name,
                 estoque: parseInt(productData.quantity) || 0,
                 categoria_nivel_1: productData.category || 'Geral',
-                preco: productData.price || '0,00',
+                preco: String(productData.price) || '0,00',
                 marca: productData.brand || null,
                 cor: productData.color || null,
-                Imagem: productData.image || null // Usa 'Imagem' para manter compatibilidade com a tabela atual
+                Imagem: productData.image || null
             };
 
-            // Somente inclui estoque_minimo se for fornecido (evita erro de coluna inexistente)
-            if (productData.minimum_stock !== undefined && productData.minimum_stock !== null) {
-                insertPayload.estoque_minimo = parseInt(productData.minimum_stock);
-            }
+            // Remove campos nulos/undefined para evitar erros se colunas não permitirem nulos
+            Object.keys(insertPayload).forEach(key => (insertPayload[key] == null) && delete insertPayload[key]);
+
+            console.log('📤 Tentando inserir no Supabase:', insertPayload);
 
             const { data, error } = await this.supabase
                 .from('estoque')
@@ -152,13 +156,7 @@ class SupabaseService {
                 .select();
 
             if (error) {
-                // Se o erro for coluna inexistente para estoque_minimo, tenta de novo sem ele
-                if (error.message.includes('column "estoque_minimo" does not exist')) {
-                    delete insertPayload.estoque_minimo;
-                    const retry = await this.supabase.from('estoque').insert([insertPayload]).select();
-                    if (retry.error) throw retry.error;
-                    return { success: true, product: retry.data[0] };
-                }
+                console.error('❌ Erro Detalhado Supabase Insert:', error);
                 throw error;
             }
             return { success: true, product: data[0] };
@@ -185,12 +183,18 @@ class SupabaseService {
 
     async updateProduct(id, productData) {
         try {
+            if (!this.supabase) throw new Error("Supabase não inicializado");
+
             const updatePayload = {};
             if (productData.name !== undefined) updatePayload.nome = productData.name;
             if (productData.quantity !== undefined) updatePayload.estoque = parseInt(productData.quantity);
-            if (productData.minimum_stock !== undefined) updatePayload.estoque_minimo = parseInt(productData.minimum_stock);
             if (productData.category !== undefined) updatePayload.categoria_nivel_1 = productData.category;
-            if (productData.price !== undefined) updatePayload.preco = productData.price;
+            if (productData.price !== undefined) updatePayload.preco = String(productData.price);
+            if (productData.brand !== undefined) updatePayload.marca = productData.brand;
+            if (productData.cor !== undefined) updatePayload.cor = productData.cor;
+            if (productData.image !== undefined) updatePayload.Imagem = productData.image;
+
+            console.log(`📤 Atualizando produto ${id} no Supabase:`, updatePayload);
 
             const { data, error } = await this.supabase
                 .from('estoque')

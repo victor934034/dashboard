@@ -199,7 +199,7 @@ export default function Dashboard() {
               {stats.lowStock}
             </div>
             <p className="text-sm text-muted-foreground mt-1">
-              Produtos com estoque abaixo do mínimo
+              Produtos com estoque abaixo de 10 unidades
             </p>
           </CardContent>
         </Card>

@@ -52,6 +52,7 @@ export const pedidosApi = {
   updateStatus: (id: string, status: string) =>
     api.patch(`/pedidos/${id}/status`, { status }),
   getStats: () => api.get('/pedidos/stats/overview'),
+  getHistory: () => api.get('/pedidos/history'),
   delete: (id: string | number) => api.delete(`/pedidos/${id}`)
 };
 

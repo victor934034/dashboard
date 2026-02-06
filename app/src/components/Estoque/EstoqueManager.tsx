@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Trash2, Loader2, RefreshCcw, Package, ShieldAlert, Image as ImageIcon, Wallet, Info, Search, Save } from 'lucide-react';
+import { Plus, Trash2, Loader2, RefreshCcw, Package, ShieldAlert, Image as ImageIcon, Wallet, Info, Search, Save, Edit } from 'lucide-react';
 import { stockApi } from '@/services/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table as UITable, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 
@@ -30,6 +30,7 @@ export default function EstoqueManager() {
   const [isAdding, setIsAdding] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   const [newProduct, setNewProduct] = useState({
     name: '',
@@ -53,9 +54,9 @@ export default function EstoqueManager() {
         setProducts(allProducts);
         setFilteredProducts(allProducts);
 
-        // Calcular estoque baixo
+        // Calcular estoque baixo (limite de 10 conforme solicitado)
         const low = allProducts.filter(
-          (p: Product) => p.quantity < p.minimum_stock && p.minimum_stock > 0
+          (p: Product) => p.quantity < 10
         );
         setLowStockProducts(low);
       }
@@ -104,18 +105,55 @@ export default function EstoqueManager() {
 
     try {
       setIsAdding(true);
-      const response = await stockApi.addProduct(newProduct);
+
+      let response;
+      if (editingProduct) {
+        response = await stockApi.updateProduct(editingProduct.id, {
+          name: newProduct.name,
+          quantity: newProduct.quantity,
+          category: newProduct.category,
+          price: newProduct.price,
+          brand: newProduct.brand,
+          color: newProduct.color,
+          image: newProduct.image
+        });
+      } else {
+        response = await stockApi.addProduct(newProduct);
+      }
+
       if (response.data.success) {
-        toast.success('Produto cadastrado com sucesso');
+        toast.success(editingProduct ? 'Produto atualizado' : 'Produto cadastrado');
         setIsDialogOpen(false);
+        setEditingProduct(null);
         setNewProduct({ name: '', quantity: 0, minimum_stock: 0, category: 'Geral', price: '0,00', brand: '', color: '', image: '' });
         loadData(true);
       }
     } catch (error) {
-      toast.error('Erro ao cadastrar produto');
+      toast.error(editingProduct ? 'Erro ao atualizar' : 'Erro ao cadastrar');
     } finally {
       setIsAdding(false);
     }
+  };
+
+  const handleEditClick = (product: Product) => {
+    setEditingProduct(product);
+    setNewProduct({
+      name: product.name,
+      quantity: product.quantity,
+      minimum_stock: product.minimum_stock,
+      category: product.category,
+      price: product.price || '0,00',
+      brand: product.brand || '',
+      color: product.color || '',
+      image: product.image || ''
+    });
+    setIsDialogOpen(true);
+  };
+
+  const handleOpenAddDialog = () => {
+    setEditingProduct(null);
+    setNewProduct({ name: '', quantity: 0, minimum_stock: 0, category: 'Geral', price: '0,00', brand: '', color: '', image: '' });
+    setIsDialogOpen(true);
   };
 
   const handleDeleteProduct = async (id: string | number) => {
@@ -185,16 +223,17 @@ export default function EstoqueManager() {
             Sincronizar
           </Button>
 
+          <Button className="h-10 bg-primary hover:bg-primary/90 shadow-md transition-all active:scale-95" onClick={handleOpenAddDialog}>
+            <Plus className="w-4 h-4 mr-2" />
+            Novo Item
+          </Button>
+
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="h-10 bg-primary hover:bg-primary/90 shadow-md transition-all active:scale-95">
-                <Plus className="w-4 h-4 mr-2" />
-                Novo Item
-              </Button>
-            </DialogTrigger>
             <DialogContent className="max-w-xl">
               <DialogHeader>
-                <DialogTitle className="text-xl">Novo Produto no Estoque</DialogTitle>
+                <DialogTitle className="text-xl">
+                  {editingProduct ? 'Editar Produto' : 'Novo Produto no Estoque'}
+                </DialogTitle>
               </DialogHeader>
               <div className="grid grid-cols-2 gap-4 py-4">
                 <div className="col-span-2 space-y-2">
@@ -276,7 +315,7 @@ export default function EstoqueManager() {
                 <Button variant="ghost" onClick={() => setIsDialogOpen(false)}>Cancelar</Button>
                 <Button onClick={handleAddProduct} disabled={isAdding} className="px-8">
                   {isAdding ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
-                  Confirmar Cadastro
+                  {editingProduct ? 'Salvar Alterações' : 'Confirmar Cadastro'}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -354,23 +393,31 @@ export default function EstoqueManager() {
                           type="number"
                           value={product.quantity}
                           onChange={(e) => handleUpdateQuantity(product.id, e.target.value)}
-                          className={`w-20 mx-auto text-center font-bold h-9 bg-white transition-all ${product.quantity < product.minimum_stock && product.minimum_stock > 0 ? 'border-destructive text-destructive bg-destructive/5' : 'focus:border-primary'}`}
+                          className={`w-20 mx-auto text-center font-bold h-9 bg-white transition-all ${product.quantity < 10 ? 'border-destructive text-destructive bg-destructive/5' : 'focus:border-primary'}`}
                         />
-                        {product.minimum_stock > 0 && (
-                          <div className="text-[10px] text-muted-foreground mt-1">
-                            Min: {product.minimum_stock}
-                          </div>
-                        )}
+                        <div className="text-[10px] text-muted-foreground mt-1">
+                          Alerta: &lt; 10
+                        </div>
                       </TableCell>
                       <TableCell className="text-right pr-6">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="opacity-0 group-hover:opacity-100 transition-all text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                          onClick={() => handleDeleteProduct(product.id)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-muted-foreground hover:text-primary hover:bg-primary/10"
+                            onClick={() => handleEditClick(product)}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => handleDeleteProduct(product.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))

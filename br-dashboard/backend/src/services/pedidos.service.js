@@ -125,6 +125,63 @@ class PedidosService {
             return { success: false, error: error.message };
         }
     }
+
+    async getHistory() {
+        try {
+            const result = await this.getPedidos();
+            if (!result.success) return result;
+
+            const pedidos = result.pedidos;
+            const historyMap = {};
+
+            pedidos.forEach(p => {
+                // Tenta extrair a data do campo data_hora
+                // Formatos possíveis: "DD/MM/YYYY HH:MM:SS" ou ISO string
+                let dateStr = 'Data indefinida';
+                try {
+                    if (p.data_hora.includes('/')) {
+                        dateStr = p.data_hora.split(' ')[0];
+                    } else {
+                        dateStr = new Date(p.data_hora).toLocaleDateString('pt-BR');
+                    }
+                } catch (e) {
+                    console.error('Erro ao processar data:', p.data_hora);
+                }
+
+                if (!historyMap[dateStr]) {
+                    historyMap[dateStr] = {
+                        date: dateStr,
+                        totalPedidos: 0,
+                        faturamento: 0,
+                        pedidos: []
+                    };
+                }
+
+                historyMap[dateStr].totalPedidos++;
+                if (p.status === 'concluido') {
+                    historyMap[dateStr].faturamento += (parseFloat(p.total) || 0);
+                }
+                historyMap[dateStr].pedidos.push(p);
+            });
+
+            // Converter para array e ordenar por data decrescente (mais recente primeiro)
+            const history = Object.values(historyMap).sort((a, b) => {
+                const [dayA, monthA, yearA] = a.date.split('/');
+                const [dayB, monthB, yearB] = b.date.split('/');
+                const dateA = new Date(yearA, monthA - 1, dayA);
+                const dateB = new Date(yearB, monthB - 1, dayB);
+                return dateB.getTime() - dateA.getTime();
+            });
+
+            return {
+                success: true,
+                history
+            };
+        } catch (error) {
+            console.error('Erro ao buscar histórico:', error);
+            return { success: false, error: error.message };
+        }
+    }
 }
 
 module.exports = new PedidosService();

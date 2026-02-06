@@ -42,6 +42,19 @@ router.get('/stats/overview', async (req, res) => {
   }
 });
 
+// Histórico de pedidos agrupado por dia
+router.get('/history', async (req, res) => {
+  try {
+    const result = await pedidosService.getHistory();
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // Buscar pedido por ID
 router.get('/:id', async (req, res) => {
   try {
